@@ -139,6 +139,23 @@ void* find_ldr_sepo(struct iboot_img* iboot_in) {
     return ldr_sepo;
 }
 
+void* find_rsa_check_3(struct iboot_img* iboot_in) {
+    printf("%s: Entering...\n", __FUNCTION__);
+
+    /* Find the RSA check */
+    void* rsa_check_3 = memstr(iboot_in->buf, iboot_in->len, RSA_PATCH_IOS_3);
+    if(!rsa_check_3) {
+        printf("%s: Unable to find RSA check!\n", __FUNCTION__);
+        return 0;
+    }
+
+    printf("%s: Found RSA check at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, rsa_check_3));
+
+    printf("%s: Leaving...\n", __FUNCTION__);
+
+    return rsa_check_3;
+}
+
 void* find_rsa_check_4(struct iboot_img* iboot_in) {
     printf("%s: Entering...\n", __FUNCTION__);
     

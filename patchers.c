@@ -563,16 +563,28 @@ int patch_rsa_check(struct iboot_img* iboot_in) {
     /* Find the BL verify_shsh instruction... */
     int os_vers = get_os_version(iboot_in);
     if(os_vers == 4 || os_vers == 3) {
-        
-        void* rsa_check_4 = find_rsa_check_4(iboot_in);
-        if(!find_rsa_check_4) {
-            printf("%s: Unable to find BL ECID!\n", __FUNCTION__);
-            return 0;
+        if (os_vers == 4) {
+            void* rsa_check_4 = find_rsa_check_4(iboot_in);
+            if(!rsa_check_4) {
+                printf("%s: Unable to find BL ECID!\n", __FUNCTION__);
+                return 0;
+            }
+            /* BL --> MOVS R0, #0; MOVS R0, #0 */
+            printf("%s: Patching RSA at %p...\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, rsa_check_4));
+            *(uint32_t*)rsa_check_4 = bswap32(0x00200020);
         }
-        /* BL --> MOVS R0, #0; MOVS R0, #0 */
-        printf("%s: Patching RSA at %p...\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, rsa_check_4));
-        *(uint32_t*)rsa_check_4 = bswap32(0x00200020);
-        
+
+        if (os_vers == 3) {
+            void* rsa_check_3 = find_rsa_check_3(iboot_in);
+            if(!rsa_check_3) {
+                printf("%s: Unable to find BL ECID!\n", __FUNCTION__);
+                return 0;
+            }
+            /* BL --> MOVS R0, #0; MOVS R0, #0 */
+            printf("%s: Patching RSA at %p...\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, rsa_check_3));
+            *(uint32_t*)rsa_check_3 = bswap32(0x00200020);
+        }
+
         void* ldr_ecid = find_ldr_ecid(iboot_in);
         if(!ldr_ecid) {
             printf("%s: Unable to find RSA check!\n", __FUNCTION__);
