@@ -371,6 +371,23 @@ int patch_boot_ramdisk(struct iboot_img* iboot_in) {
     return 1;
 }
 
+int patch_logo(struct iboot_img* iboot_in) {
+    printf("%s: Entering...\n", __FUNCTION__);
+    uint8_t logo[] = {0x46, 0xF2, 0x6F, 0x70};
+    uint8_t *logo_loc = memmem(iboot_in->buf, iboot_in->len, &logo, sizeof(logo));
+    if (!logo_loc) {
+        printf("%s: Failed to find AppleLogo\n", __FUNCTION__);
+        return 0;
+    }
+    printf("%s: Found applelogo: %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, logo_loc));
+
+    printf("%s: Patching logo -> logb ...\n", __FUNCTION__);
+    *(uint32_t*)logo_loc = 0x7062f246;
+
+    printf("%s: Leaving...\n", __FUNCTION__);
+    return 1;
+}
+
 int patch_logo4(struct iboot_img* iboot_in) {
     printf("%s: Entering...\n", __FUNCTION__);
     void* logo_loc = memmem(iboot_in -> buf, iboot_in -> len, "ogol", strlen("ogol"));

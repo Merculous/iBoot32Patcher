@@ -41,6 +41,7 @@ int patch_boot_partition(struct iboot_img* iboot_in, int ver);
 int patch_boot_ramdisk(struct iboot_img* iboot_in);
 int patch_setenv_cmd(struct iboot_img* iboot_in);
 int patch_433orlower_jumpiBoot(struct iboot_img* iboot_in);
+int patch_logo(struct iboot_img* iboot_in);
 int patch_logo4(struct iboot_img* iboot_in);
 int patch_dualboot_ibss(struct iboot_img* iboot_in);
 int patch_dualboot_ibec(struct iboot_img* iboot_in);
