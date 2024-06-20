@@ -139,38 +139,47 @@ void* find_ldr_sepo(struct iboot_img* iboot_in) {
     return ldr_sepo;
 }
 
-void* find_rsa_check_3(struct iboot_img* iboot_in) {
+void* find_rsa_check_3_4(struct iboot_img* iboot_in) {
     printf("%s: Entering...\n", __FUNCTION__);
 
-    /* Find the RSA check */
-    void* rsa_check_3 = memstr(iboot_in->buf, iboot_in->len, RSA_PATCH_IOS_3);
-    if(!rsa_check_3) {
-        printf("%s: Unable to find RSA check!\n", __FUNCTION__);
+    /* Find Apple Secure Boot Certification Authority */
+    void* rsa_cert_ldr = find_next_LDR_insn_with_str(iboot_in, RSA_STR);
+    if(!rsa_cert_ldr) {
+        printf("%s: Unable to find Certification LDR!\n", __FUNCTION__);
         return 0;
     }
 
-    printf("%s: Found RSA check at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, rsa_check_3));
+    printf("%s: Found %s LDR at %p\n", __FUNCTION__, RSA_STR, GET_IBOOT_FILE_OFFSET(iboot_in, rsa_cert_ldr));
 
-    printf("%s: Leaving...\n", __FUNCTION__);
+    /* Not sure how to do BL without using some offset (0x50) :/ */
 
-    return rsa_check_3;
-}
-
-void* find_rsa_check_4(struct iboot_img* iboot_in) {
-    printf("%s: Entering...\n", __FUNCTION__);
-    
-    /* Find the RSA check */
-    void* rsa_check_4 = memstr(iboot_in->buf, iboot_in->len, RSA_PATCH_IOS_4);
-    if(!rsa_check_4) {
-        printf("%s: Unable to find RSA check!\n", __FUNCTION__);
+    void* rsa_bl = bl_search_down(rsa_cert_ldr + 0x50, 0x100);
+    if(!rsa_bl) {
+        printf("%s: Could not find RSA BL!\n", __FUNCTION__);
         return 0;
     }
-    
-    printf("%s: Found RSA check at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, rsa_check_4));
-    
+
+    printf("%s: Found RSA BL at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, rsa_bl));
+
+    void* rsa_bl_func = resolve_bl32(rsa_bl);
+    if(!rsa_bl_func) {
+        printf("%s: Failed to xref RSA BL!\n", __FUNCTION__);
+        return 0;
+    }
+
+    printf("%s: RSA Function address: %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, rsa_bl_func));
+
+    void* rsa_mov_neg1 = pattern_search(rsa_bl_func, 0x200, bswap32(MOVW_R0_NEG_1), bswap32(MOVW_R0_NEG_1), 1);
+    if(!rsa_mov_neg1) {
+        printf("%s: Failed to find MOV.W R0, #0xFFFFFFFF!\n", __FUNCTION__);
+        return 0;
+    }
+
+    printf("%s: Found MOV.W R0, #0xFFFFFFFF at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, rsa_mov_neg1));
+
     printf("%s: Leaving...\n", __FUNCTION__);
-    
-    return rsa_check_4;
+
+    return rsa_mov_neg1;
 }
 
 void* find_bl_verify_shsh_5_6_7(struct iboot_img* iboot_in) {
