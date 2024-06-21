@@ -24,6 +24,7 @@
 
 #define RSA_STR "Apple Secure Boot Certification Authority"
 #define MOVW_R0_NEG_1 0x4ff0ff30
+#define MOV_NEGS_R0_1 0x01204042
 
 void* find_bl_verify_shsh(struct iboot_img* iboot_in);
 void* find_rsa_check_3_4(struct iboot_img* iboot_in);
