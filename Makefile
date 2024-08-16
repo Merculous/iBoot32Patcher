@@ -1,4 +1,10 @@
+
+CC=clang
+CFLAGS=-Wno-multichar src/*.c
+CPPFLAGS=-I.
+NAME=iBoot32Patcher
+
 all:
-	clang *.c -Wno-multichar -I. -o iBoot32Patcher
+	$(CC) $(CPPFLAGS) $(CFLAGS) -o $(NAME)
 clean:
 	rm -f iBoot32Patcher
