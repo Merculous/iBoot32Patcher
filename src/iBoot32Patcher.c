@@ -53,7 +53,6 @@ int main(int argc, char** argv) {
 	char* cmd_handler_str = NULL;
 	char* custom_boot_args = NULL;
 	bool env_boot_args = false;
-    bool rsa_patch = false;
     bool debug_patch = false;
     bool boot_partition_patch = false;
     int boot_partition_9 = 0;
@@ -75,7 +74,6 @@ int main(int argc, char** argv) {
         printf("\t-a\t\t\tUse boot-args environment variable\n");
         printf("\t-c <cmd> <ptr>\t\tChange a command handler's pointer (hex)\n");
         
-        printf("\t--rsa\t\t\tApply RSA check patch\n");
         printf("\t--debug\t\t\tApply debug_enabled patch\n");
         printf("\t--ticket\t\tApply ticket patch\n");
         printf("\t--local-boot\t\tApply iOS 10 local boot patch\n");
@@ -102,11 +100,7 @@ int main(int argc, char** argv) {
 			cmd_handler_str = (char*) argv[i+1];
 			sscanf((char*) argv[i+2], "0x%08X", &cmd_handler_ptr);
 		}
-        
-        if(HAS_ARG("--rsa", 0)) {
-            rsa_patch = true;
-        }
-        
+
         if(HAS_ARG("-a", 0)) {
             env_boot_args = true;
         }
@@ -165,11 +159,13 @@ int main(int argc, char** argv) {
         return -1;
     }
     
+    /*
     if (!rsa_patch && !debug_patch && !boot_partition_patch && !boot_ramdisk_patch && !setenv_patch && !ticket_patch && !custom_boot_args && !cmd_handler_str && !remote_patch && !local_patch && !env_boot_args && !kaslr_patch && !i433_patch && !logo4_patch) {
         printf("%s: Nothing to patch!\n", __FUNCTION__);
         return -1;
     }
-    
+    */
+
     if(custom_boot_args && env_boot_args) {
     	printf("%s: Can't hardcode boot-args and use environment variable!\n", __FUNCTION__);
         return -1;
@@ -327,13 +323,10 @@ int main(int argc, char** argv) {
 
 	/* All loaders have the RSA check. */
     
-    if (rsa_patch) {
-        ret = patch_rsa_check(&iboot_in);
-        if(!ret) {
-            printf("%s: Error doing patch_rsa_check()!\n", __FUNCTION__);
-            free(iboot_in.buf);
-            return -1;
-        }
+    if (!patch_rsa_check(&iboot_in)) {
+        printf("%s: Error doing patch_rsa_check()!\n", __FUNCTION__);
+        free(iboot_in.buf);
+        return -1;
     }
 
     if(boot_partition_patch) {
