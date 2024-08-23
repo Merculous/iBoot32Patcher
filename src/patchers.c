@@ -866,3 +866,55 @@ int patch_bgcolor(struct iboot_img* iboot_in, const char* bgcolor) {
     return 1;
 }
 
+int patch_dualboot(struct iboot_img* iboot_in, bool is940, bool is920) {
+    printf("%s: Entering...\n", __FUNCTION__);
+
+    void* kloader_addr = find_kloader_addr(iboot_in);
+    if (!kloader_addr) {
+        printf("%s: Failed to find kloader MOV!\n", __FUNCTION__);
+        return 0;
+    }
+
+    printf("%s: Found kloader MOV at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, kloader_addr));
+
+    if (is940 && is920) {
+        printf("%s: is940 and is920 cannot be set at the same time!\n", __FUNCTION__);
+        return 0;
+    } else if  (is940 && !is920) {
+        // 940
+        *(uint32_t*)kloader_addr = bswap32(0xCBF6D074);
+        printf("%s: Using 940 patch!\n", __FUNCTION__);
+    } else if (!is940 && is920) {
+        // 920
+        *(uint32_t*)kloader_addr = bswap32(0xC6F6D071);
+        printf("%s: Using 920 patch!\n", __FUNCTION__);
+    } else {
+        // default
+        *(uint32_t*)kloader_addr = bswap32(0xC7F6D074);
+        printf("%s: Using default patch!\n", __FUNCTION__);
+    }
+
+    void* usb = find_usb_wait_for_image(iboot_in);
+    if (!usb) {
+        printf("%s: Failed to find usb_wait_for_image()!\n", __FUNCTION__);
+        return 0;
+    }
+
+    printf("%s: Found usb_wait_for_image() at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, usb));
+
+    *(uint32_t*)usb = bswap32(0x00BF00BF);
+
+    // Patch BLT
+
+    void* blt = branch_thumb_conditional_search(usb, 10, 0);
+    if (!blt) {
+        printf("%s: Failed to find BLT to patch!\n", __FUNCTION__);
+        return 0;
+    }
+
+    printf("%s: Found BLT at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, blt));
+
+    *(uint16_t*) blt = bswap16(0x00BF);
+
+    return 1;
+}

@@ -45,5 +45,7 @@ void* find_Boot_Args_String_Location(struct iboot_img* iboot_in);
 void* find_Boot_Args_MOV(void* Search_Begin);
 void* find_ldr_xref(struct iboot_img *iboot_in);
 void* find_null_str(void* _mov_insn, int reg);
+void* find_kloader_addr(struct iboot_img* iboot_in);
+void* find_usb_wait_for_image(struct iboot_img* iboot_in);
 
 #endif

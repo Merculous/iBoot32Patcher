@@ -337,7 +337,7 @@ void* find_dtre_get_value_bl_insn(struct iboot_img* iboot_in, const char* var) {
 }
 
 void* find_verify_shsh_top(void* ptr) {
-    void* top = push_r4_r7_lr_search_up(ptr, 0x500);
+    void* top = push_r4_to_r7_lr_search_up(ptr, 0x500);
     if(!top) {
         return 0;
     }
@@ -452,4 +452,97 @@ void* find_boot_ramdisk_ldr(struct iboot_img* iboot_in) {
     }
     printf("%s: Found boot-ramdisk LDR: %p\n", __FUNCTION__, GET_IBOOT_ADDR(iboot_in, boot_ramdisk_ldr));
     return boot_ramdisk_ldr;
+}
+
+void* find_kloader_addr(struct iboot_img* iboot_in) {
+    printf("%s: Entering...\n", __FUNCTION__);
+
+    char iBSS_ready[] = "iBSS ready, asking for DFU...\n";
+
+    void* iBSS_ready_ldr = find_next_LDR_insn_with_str(iboot_in, iBSS_ready);
+    if (!iBSS_ready_ldr) {
+        printf("%s: Failed to find %s\n", __FUNCTION__, iBSS_ready);
+        return 0;
+    }
+
+    printf("%s: Found LDR at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, iBSS_ready_ldr));
+
+    void* kloader_addr = find_next_MOVT_insn(iBSS_ready_ldr + 12, 14);
+    if (!kloader_addr) {
+        printf("%s: Failed to find MOVT for kloader!\n", __FUNCTION__);
+
+        kloader_addr = find_next_MOVT_insn(iBSS_ready_ldr + 10, 14);
+        if (!kloader_addr) {
+            printf("%s: Failed to adjusted find for MOVT\n", __FUNCTION__);
+
+            // MOVT can sometimes be above the LDR
+
+            kloader_addr = find_next_MOVT_insn(iBSS_ready_ldr - 0x30, 0x10);
+            if (!kloader_addr) {
+                printf("%s: Failed to find MOVT above LDR!\n", __FUNCTION__);
+                return 0;
+            }
+        }
+    }
+
+    printf("%s: Found MOV for kloader at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, kloader_addr));
+
+    return kloader_addr;
+}
+
+void* find_usb_wait_for_image(struct iboot_img* iboot_in) {
+    printf("%s: Entering...\n", __FUNCTION__);
+
+    char dfu[] = "Apple Mobile Device (DFU Mode)";
+
+    void* dfu_ldr = find_next_LDR_insn_with_str(iboot_in, dfu);
+    if (!dfu_ldr) {
+        printf("%s: Failed to find %s\n", __FUNCTION__, dfu);
+        return 0;
+    }
+
+    printf("%s: Found LDR at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, dfu_ldr));
+
+    void* push = push_r4_r7_lr_search_up(dfu_ldr, 0x20);
+    if (!push) {
+        printf("%s: Failed to find PUSH {R4,R7,LR}!\n", __FUNCTION__);
+        return 0;
+    }
+
+    printf("%s: Found PUSH {R4,R7,LR} at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, push));
+
+    void* push_xref = find_next_bl_insn_to(iboot_in, (uint32_t) ((uintptr_t)GET_IBOOT_FILE_OFFSET(iboot_in, push) + 1));
+    if (!push_xref) {
+        printf("%s: Failed to find BL to %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, push));
+        return 0;
+    }
+
+    printf("%s: Found xref at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, push_xref));
+
+    void* next_push = push_r4_to_r7_lr_search_up(push_xref, 0x10);
+    if (!next_push) {
+        printf("%s: Failed to find PUSH {R4-R7,LR}!\n", __FUNCTION__);
+        
+        // Some can still be PUSH {R4,R7,LR}
+
+        next_push = push_r4_r7_lr_search_up(push_xref, 0x10);
+
+        if (!next_push) {
+            printf("%s: Failed to find PUSH {R4,R7,LR}!\n", __FUNCTION__);
+            return 0;
+        }
+    }
+
+    printf("%s: Found PUSH {R4-R7,LR} at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, next_push));
+
+    void* next_push_xref = find_next_bl_insn_to(iboot_in, (uint32_t) ((uintptr_t)GET_IBOOT_FILE_OFFSET(iboot_in, next_push) + 1));
+    if (!next_push_xref) {
+        printf("%s: Failed to find next xref!\n", __FUNCTION__);
+        return 0;
+    }
+
+    printf("%s: Found next xref at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, next_push_xref));
+
+
+    return next_push_xref;
 }

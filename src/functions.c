@@ -130,9 +130,9 @@ void* find_next_CMP_insn_with_value(void* start, size_t len, const uint8_t val) 
 }
 
 void* find_next_LDR_insn_with_str(struct iboot_img* iboot_in, char* in) {
-    char *str_loc = memmem(iboot_in->buf ,iboot_in->len, in,strlen(in));
+    char *str_loc = memmem(iboot_in->buf, iboot_in->len, in, strlen(in));
     if(!str_loc) {
-        printf("%s: Unable to find Address of string:  %s \n", in);
+        printf("%s: Unable to find Address of string: %s\n", __FUNCTION__, in);
         return 0;
     }
     return find_next_LDR_insn_with_value(iboot_in, GET_IBOOT_ADDR(iboot_in, str_loc));
@@ -156,6 +156,16 @@ void* find_next_MOV_insn(void* start, size_t len) {
     for(int i = 0; i < len; i += sizeof(uint16_t)) {
         struct arm32_thumb_hi_reg_op* candidate = (struct arm32_thumb_hi_reg_op*) (start + i);
         if(is_MOV_insn(start + i)) {
+            return (void*) candidate;
+        }
+    }
+    return NULL;
+}
+
+void* find_next_MOVT_insn(void* start, size_t len) {
+    for(int i = 0; i < len; i += sizeof(uint32_t)) { // MOVT is a 32-bit instruction
+        struct arm32_thumb_MOVT* candidate = (struct arm32_thumb_MOVT*) (start + i);
+        if(is_MOVT_insn(start + i)) {
             return (void*) candidate;
         }
     }
@@ -233,6 +243,14 @@ bool is_MOV_insn(void* offset) {
 bool is_LDRW_insn(void* offset) {
     struct arm32_thumb_LDR_T3* test = (struct arm32_thumb_LDR_T3*) offset;
     if(test->pad == 0xF8D) {
+        return true;
+    }
+    return false;
+}
+
+bool is_MOVT_insn(void* offset) {
+    struct arm32_thumb_MOVT* test = (struct arm32_thumb_MOVT*) offset;
+    if(test->pad0 == 0x2C && test->pad1 == 0x1E && test->bit31 == 0) {
         return true;
     }
     return false;
@@ -361,6 +379,11 @@ void* pattern_search(const void* addr, int len, int pattern, int mask, int step)
 }
 
 void* push_r4_r7_lr_search_up(const void* start_addr, int len) {
+    // 90 B5
+    return pattern_search(start_addr, len, 0x0000B590, 0x0000FFFF, -2);
+}
+
+void* push_r4_to_r7_lr_search_up(const void* start_addr, int len) {
     // F0 B5
     return pattern_search(start_addr, len, 0x0000B5F0, 0x0000FFFF, -2);
 }

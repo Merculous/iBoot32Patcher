@@ -65,6 +65,9 @@ int main(int argc, char** argv) {
     bool i433_patch = false;
     bool logo4_patch = false;
     char* custom_color = NULL;
+    bool dualboot_patch = false;
+    bool is940 = false;
+    bool is920 = false;
 	struct iboot_img iboot_in;
 	memset(&iboot_in, 0, sizeof(iboot_in));
 
@@ -86,6 +89,9 @@ int main(int argc, char** argv) {
         printf("\t--bgcolor RRGGBB\tApply custom background color\n");
         printf("\t--logo4\t\t\tFix AppleLogo for iOS 4 iBoot\n");
         printf("\t--433\t\t\tApply enable jump to iBoot patch for iOS 4.3.3 or lower\n");
+        printf("\t--dualboot\t\tApply default dualbooting patches for iOS 5 -> iOS 10\n");
+        printf("\t--940\t\t\tDevice is 8940 (use with --dualboot)\n");
+        printf("\t--920\t\t\tDevice is 8920 (use with --dualboot)\n");
 		return -1;
 	}
 
@@ -153,12 +159,29 @@ int main(int argc, char** argv) {
         if(HAS_ARG("--433", 0)) {
             i433_patch = true;
         }
+
+        if(HAS_ARG("--dualboot", 0)) {
+            dualboot_patch = true;
+        }
+
+        if(HAS_ARG("--940", 0)) {
+            is940 = true;
+        }
+
+        if(HAS_ARG("--920", 0)) {
+            is920 = true;
+        }
 	}
     
     if(local_patch && remote_patch) {
         return -1;
     }
     
+    if(is940 && is920) {
+        printf("%s: Please set either 940 or 920, not both!", __FUNCTION__);
+        return -1;
+    }
+
     /*
     if (!rsa_patch && !debug_patch && !boot_partition_patch && !boot_ramdisk_patch && !setenv_patch && !ticket_patch && !custom_boot_args && !cmd_handler_str && !remote_patch && !local_patch && !env_boot_args && !kaslr_patch && !i433_patch && !logo4_patch) {
         printf("%s: Nothing to patch!\n", __FUNCTION__);
@@ -351,6 +374,15 @@ int main(int argc, char** argv) {
     	ret = patch_setenv_cmd(&iboot_in);
     	if(!ret) {
             printf("%s: Error doing patch_setenv_cmd()!\n", __FUNCTION__);
+            free(iboot_in.buf);
+            return -1;
+        }
+    }
+
+    if(dualboot_patch) {
+        ret = patch_dualboot(&iboot_in, is940, is920);
+    	if(!ret) {
+            printf("%s: Error doing patch_dualboot()!\n", __FUNCTION__);
             free(iboot_in.buf);
             return -1;
         }
