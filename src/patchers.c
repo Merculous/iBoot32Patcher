@@ -866,8 +866,20 @@ int patch_bgcolor(struct iboot_img* iboot_in, const char* bgcolor) {
     return 1;
 }
 
-int patch_dualboot(struct iboot_img* iboot_in, bool is940, bool is920) {
+int patch_dualboot_ibss(struct iboot_img* iboot_in, bool is940, bool is920) {
     printf("%s: Entering...\n", __FUNCTION__);
+
+    uint32_t iBootType = get_iBoot_type(iboot_in);
+    if (iBootType != bswap32(0x69425353)) {
+        printf("%s: This image is not an iBSS!\n", __FUNCTION__);
+        return 0;
+    }
+
+    int osVersion = get_os_version(iboot_in);
+    if (osVersion < 5 && has_kernel_load(iboot_in)) {
+        printf("%s: Detected iBSS is pre-iOS 5! Please use an iBEC instead!\n", __FUNCTION__);
+        return 0;
+    }
 
     void* kloader_addr = find_kloader_addr(iboot_in);
     if (!kloader_addr) {

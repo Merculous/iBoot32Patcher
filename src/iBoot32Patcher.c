@@ -380,9 +380,9 @@ int main(int argc, char** argv) {
     }
 
     if(dualboot_patch) {
-        ret = patch_dualboot(&iboot_in, is940, is920);
+        ret = patch_dualboot_ibss(&iboot_in, is940, is920);
     	if(!ret) {
-            printf("%s: Error doing patch_dualboot()!\n", __FUNCTION__);
+            printf("%s: Error doing patch_dualboot_ibss()!\n", __FUNCTION__);
             free(iboot_in.buf);
             return -1;
         }

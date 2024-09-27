@@ -77,4 +77,5 @@ void set_MOVT_W_insn_val(void* offset, uint8_t rd, uint16_t val);
 void set_MOVW_insn_val(void* offset, uint8_t rd, uint16_t val);
 void* find_next_LDR_insn_with_str(struct iboot_img* iboot_in, char* in);
 void* Build_MOV(void* buff, uint8_t rd, uint8_t rs);
+uint32_t get_iBoot_type(struct iboot_img* iboot_in);
 #endif

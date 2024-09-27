@@ -40,5 +40,5 @@ int patch_boot_ramdisk(struct iboot_img* iboot_in);
 int patch_setenv_cmd(struct iboot_img* iboot_in);
 int patch_433orlower_jumpiBoot(struct iboot_img* iboot_in);
 int patch_logo4(struct iboot_img* iboot_in);
-int patch_dualboot(struct iboot_img* iboot_in, bool is940, bool is920);
+int patch_dualboot_ibss(struct iboot_img* iboot_in, bool is940, bool is920);
 #endif

@@ -467,13 +467,13 @@ void* find_kloader_addr(struct iboot_img* iboot_in) {
 
     printf("%s: Found LDR at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, iBSS_ready_ldr));
 
-    void* kloader_addr = find_next_MOVT_insn(iBSS_ready_ldr + 12, 14);
+    void* kloader_addr = find_next_MOVT_insn(iBSS_ready_ldr + 10, 14);
     if (!kloader_addr) {
         printf("%s: Failed to find MOVT for kloader!\n", __FUNCTION__);
 
-        kloader_addr = find_next_MOVT_insn(iBSS_ready_ldr + 10, 14);
+        kloader_addr = find_next_MOVT_insn(iBSS_ready_ldr + 12, 14);
         if (!kloader_addr) {
-            printf("%s: Failed to adjusted find for MOVT\n", __FUNCTION__);
+            printf("%s: Failed to find adjusted for MOVT\n", __FUNCTION__);
 
             // MOVT can sometimes be above the LDR
 
@@ -542,7 +542,6 @@ void* find_usb_wait_for_image(struct iboot_img* iboot_in) {
     }
 
     printf("%s: Found next xref at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, next_push_xref));
-
 
     return next_push_xref;
 }

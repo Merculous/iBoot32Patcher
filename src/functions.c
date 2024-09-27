@@ -490,3 +490,8 @@ void set_MOVW_insn_val(void* offset, uint8_t rd, uint16_t val) {
         movw->i = 1;
     }
 }
+
+uint32_t get_iBoot_type(struct iboot_img* iboot_in) {
+    // iBoot type is at 0x200
+    return *(uint32_t*)(iboot_in->buf + 0x200);
+}
