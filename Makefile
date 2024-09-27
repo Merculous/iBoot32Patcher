@@ -1,6 +1,6 @@
 
 CC=clang
-CFLAGS=-Wno-multichar src/*.c
+CFLAGS=-Wno-multichar -Wno-int-conversion src/*.c
 CPPFLAGS=-I.
 NAME=iBoot32Patcher
 
