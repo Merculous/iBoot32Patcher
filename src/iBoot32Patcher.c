@@ -66,8 +66,6 @@ int main(int argc, char** argv) {
     bool logo4_patch = false;
     char* custom_color = NULL;
     bool dualboot_patch = false;
-    bool is940 = false;
-    bool is920 = false;
 	struct iboot_img iboot_in;
 	memset(&iboot_in, 0, sizeof(iboot_in));
 
@@ -90,8 +88,6 @@ int main(int argc, char** argv) {
         printf("\t--logo4\t\t\tFix AppleLogo for iOS 4 iBoot\n");
         printf("\t--433\t\t\tApply enable jump to iBoot patch for iOS 4.3.3 or lower\n");
         printf("\t--dualboot\t\tApply default dualbooting patches for iOS 5 -> iOS 10\n");
-        printf("\t--940\t\t\tDevice is 8940 (use with --dualboot)\n");
-        printf("\t--920\t\t\tDevice is 8920 (use with --dualboot)\n");
 		return -1;
 	}
 
@@ -163,22 +159,9 @@ int main(int argc, char** argv) {
         if(HAS_ARG("--dualboot", 0)) {
             dualboot_patch = true;
         }
-
-        if(HAS_ARG("--940", 0)) {
-            is940 = true;
-        }
-
-        if(HAS_ARG("--920", 0)) {
-            is920 = true;
-        }
 	}
     
     if(local_patch && remote_patch) {
-        return -1;
-    }
-    
-    if(is940 && is920) {
-        printf("%s: Please set either 940 or 920, not both!", __FUNCTION__);
         return -1;
     }
 
@@ -380,9 +363,9 @@ int main(int argc, char** argv) {
     }
 
     if(dualboot_patch) {
-        ret = patch_dualboot_ibss(&iboot_in, is940, is920);
+        ret = patch_dualboot(&iboot_in);
     	if(!ret) {
-            printf("%s: Error doing patch_dualboot_ibss()!\n", __FUNCTION__);
+            printf("%s: Error doing patch_dualboot()!\n", __FUNCTION__);
             free(iboot_in.buf);
             return -1;
         }

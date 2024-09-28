@@ -25,6 +25,8 @@
 #define DEBUG_ENABLED_DTRE_VAR_STR "debug-enabled"
 #define DEFAULT_BOOTARGS_STR "rd=md0 nand-enable-reformat=1 -progress"
 #define RELIANCE_CERT_STR "Reliance on this certificate"
+#define PLATFORM_920_STR "platform/s5l8920x/init.c"
+#define PLATFORM_940_STR "platform/s5l8940x/init.c"
 
 int patch_boot_args(struct iboot_img* iboot_in, const char* boot_args);
 int patch_env_boot_args(struct iboot_img* iboot_in);
@@ -40,5 +42,7 @@ int patch_boot_ramdisk(struct iboot_img* iboot_in);
 int patch_setenv_cmd(struct iboot_img* iboot_in);
 int patch_433orlower_jumpiBoot(struct iboot_img* iboot_in);
 int patch_logo4(struct iboot_img* iboot_in);
-int patch_dualboot_ibss(struct iboot_img* iboot_in, bool is940, bool is920);
+int patch_dualboot_ibss(struct iboot_img* iboot_in);
+int patch_dualboot_ibec(struct iboot_img* iboot_in);
+int patch_dualboot(struct iboot_img* iboot_in);
 #endif

@@ -473,14 +473,18 @@ void* find_kloader_addr(struct iboot_img* iboot_in) {
 
         kloader_addr = find_next_MOVT_insn(iBSS_ready_ldr + 12, 14);
         if (!kloader_addr) {
-            printf("%s: Failed to find adjusted for MOVT\n", __FUNCTION__);
+            printf("%s: Failed to find slight adjust for MOVT\n", __FUNCTION__);
 
-            // MOVT can sometimes be above the LDR
-
-            kloader_addr = find_next_MOVT_insn(iBSS_ready_ldr - 0x30, 0x10);
+            kloader_addr = find_next_MOVT_insn(iBSS_ready_ldr + 0x22, 2);
             if (!kloader_addr) {
-                printf("%s: Failed to find MOVT above LDR!\n", __FUNCTION__);
-                return 0;
+                printf("%s: Failed to find extended adjust for MOVT\n", __FUNCTION__);
+
+                // MOVT can sometimes be above the LDR
+                kloader_addr = find_next_MOVT_insn(iBSS_ready_ldr - 0x30, 0x10);
+                if (!kloader_addr) {
+                    printf("%s: Failed to find MOVT above LDR!\n", __FUNCTION__);
+                    return 0;
+                }
             }
         }
     }
@@ -544,4 +548,18 @@ void* find_usb_wait_for_image(struct iboot_img* iboot_in) {
     printf("%s: Found next xref at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, next_push_xref));
 
     return next_push_xref;
+}
+
+void* find_fsboot_boot_command(struct iboot_img* iboot_in) {
+    printf("%s: Entering...\n", __FUNCTION__);
+
+    void* fsboot_ldr = find_next_LDR_insn_with_str(iboot_in, "fsboot");
+    if (!fsboot_ldr) {
+        printf("%s: Failed to find fsboot LDR!\n", __FUNCTION__);
+        return 0;
+    }
+
+    printf("%s: Found boot-command=fsboot at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, fsboot_ldr));
+
+    return fsboot_ldr;
 }

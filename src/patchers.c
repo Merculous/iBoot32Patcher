@@ -866,7 +866,7 @@ int patch_bgcolor(struct iboot_img* iboot_in, const char* bgcolor) {
     return 1;
 }
 
-int patch_dualboot_ibss(struct iboot_img* iboot_in, bool is940, bool is920) {
+int patch_dualboot_ibss(struct iboot_img* iboot_in) {
     printf("%s: Entering...\n", __FUNCTION__);
 
     uint32_t iBootType = get_iBoot_type(iboot_in);
@@ -875,6 +875,7 @@ int patch_dualboot_ibss(struct iboot_img* iboot_in, bool is940, bool is920) {
         return 0;
     }
 
+    // TODO: I need to test if all of this is doable for iBSS <= 4.x
     int osVersion = get_os_version(iboot_in);
     if (osVersion < 5 && has_kernel_load(iboot_in)) {
         printf("%s: Detected iBSS is pre-iOS 5! Please use an iBEC instead!\n", __FUNCTION__);
@@ -889,21 +890,19 @@ int patch_dualboot_ibss(struct iboot_img* iboot_in, bool is940, bool is920) {
 
     printf("%s: Found kloader MOV at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, kloader_addr));
 
-    if (is940 && is920) {
-        printf("%s: is940 and is920 cannot be set at the same time!\n", __FUNCTION__);
-        return 0;
-    } else if  (is940 && !is920) {
-        // 940
-        *(uint32_t*)kloader_addr = bswap32(0xCBF6D074);
-        printf("%s: Using 940 patch!\n", __FUNCTION__);
-    } else if (!is940 && is920) {
-        // 920
-        *(uint32_t*)kloader_addr = bswap32(0xC6F6D071);
-        printf("%s: Using 920 patch!\n", __FUNCTION__);
+    void* platform = memstr(iboot_in->buf, iboot_in->len, PLATFORM_920_STR);
+    if (!platform) {
+        void* platform = memstr(iboot_in->buf, iboot_in->len, PLATFORM_940_STR);
+        if (!platform) {
+            printf("%s: Image is not 920 or 940. Using default patch!\n", __FUNCTION__);
+            *(uint32_t*)kloader_addr = bswap32(0xC7F6D074);
+        } else {
+            printf("%s: Using 940 patch!\n", __FUNCTION__);
+            *(uint32_t*)kloader_addr = bswap32(0xCBF6D074);
+        }
     } else {
-        // default
-        *(uint32_t*)kloader_addr = bswap32(0xC7F6D074);
-        printf("%s: Using default patch!\n", __FUNCTION__);
+        printf("%s: Using 920 patch!\n", __FUNCTION__);
+        *(uint32_t*)kloader_addr = bswap32(0xC6F6D071);
     }
 
     void* usb = find_usb_wait_for_image(iboot_in);
@@ -927,6 +926,52 @@ int patch_dualboot_ibss(struct iboot_img* iboot_in, bool is940, bool is920) {
     printf("%s: Found BLT at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, blt));
 
     *(uint16_t*) blt = bswap16(0x00BF);
+
+    return 1;
+}
+
+int patch_dualboot_ibec(struct iboot_img* iboot_in) {
+    printf("%s: Entering...\n", __FUNCTION__);
+
+    uint32_t iBootType = get_iBoot_type(iboot_in);
+    if (iBootType != bswap32(0x69424543)) {
+        printf("%s: This image is not an iBEC!\n", __FUNCTION__);
+        return 0;
+    }
+
+    /*
+    void* fsboot = find_fsboot_boot_command(iboot_in);
+    if (!fsboot) {
+        printf("%s: Failed to find fsboot!\n", __FUNCTION__);
+        return 0;
+    }
+
+    return 1;
+    */
+
+    printf("%s: THIS NEEDS TO BE FINISHED...\n", __FUNCTION__);
+    return 0;
+}
+
+int patch_dualboot(struct iboot_img* iboot_in) {
+    printf("%s: Entering...\n", __FUNCTION__);
+
+    uint32_t imageType = get_iBoot_type(iboot_in);
+    int ret = 0;
+
+    if (imageType == bswap32(0x69425353)) {
+        ret = patch_dualboot_ibss(iboot_in);
+    } else if (imageType == bswap32(0x69424543)) {
+        ret = patch_dualboot_ibec(iboot_in);
+    } else {
+        printf("%s: Image must be either iBSS or iBEC!\n", __FUNCTION__);
+        return 0;
+    }
+
+    if (!ret) {
+        printf("%s: Failed to apply dualboot patches!\n", __FUNCTION__);
+        return 0;
+    }
 
     return 1;
 }
