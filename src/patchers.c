@@ -939,18 +939,39 @@ int patch_dualboot_ibec(struct iboot_img* iboot_in) {
         return 0;
     }
 
-    /*
     void* fsboot = find_fsboot_boot_command(iboot_in);
     if (!fsboot) {
         printf("%s: Failed to find fsboot!\n", __FUNCTION__);
         return 0;
     }
 
-    return 1;
-    */
+    void* upgrade = memstr(iboot_in->buf, iboot_in->len, "upgrade");
+    if (!upgrade) {
+        printf("%s: Failed to find upgrade str!\n", __FUNCTION__);
+        return 0;
+    }
 
-    printf("%s: THIS NEEDS TO BE FINISHED...\n", __FUNCTION__);
-    return 0;
+    printf("%s: Found upgrade at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, upgrade));
+
+    *(uint32_t*)fsboot = GET_IBOOT_ADDR(iboot_in, upgrade);
+
+    void* auto_boot_false = find_auto_boot(iboot_in);
+    if (!auto_boot_false) {
+        printf("%s: Failed to find auto-boot=false!\n", __FUNCTION__);
+        return 0;
+    }
+
+    void* true_str = memstr(iboot_in->buf, iboot_in->len, "true");
+    if (!true_str) {
+        printf("%s: Failed to find true str!\n", __FUNCTION__);
+        return 0;
+    }
+
+    printf("%s: Found true str at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, true_str));
+
+    *(uint32_t*)auto_boot_false = GET_IBOOT_ADDR(iboot_in, true_str);
+
+    return 1;
 }
 
 int patch_dualboot(struct iboot_img* iboot_in) {

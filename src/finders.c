@@ -553,13 +553,43 @@ void* find_usb_wait_for_image(struct iboot_img* iboot_in) {
 void* find_fsboot_boot_command(struct iboot_img* iboot_in) {
     printf("%s: Entering...\n", __FUNCTION__);
 
-    void* fsboot_ldr = find_next_LDR_insn_with_str(iboot_in, "fsboot");
-    if (!fsboot_ldr) {
-        printf("%s: Failed to find fsboot LDR!\n", __FUNCTION__);
+    void* fsboot_str = memstr(iboot_in->buf, iboot_in->len, "fsboot");
+    if (!fsboot_str) {
+        printf("%s: Failed to find fsboot!\n", __FUNCTION__);
         return 0;
     }
 
-    printf("%s: Found boot-command=fsboot at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, fsboot_ldr));
+    printf("%s: Found fsboot at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, fsboot_str));
 
-    return fsboot_ldr;
+    void* fsboot_xref = iboot_memmem(iboot_in, fsboot_str);
+    if (!fsboot_xref) {
+        printf("%s: Failed to find fsboot xref!\n", __FUNCTION__);
+        return 0;
+    }
+
+    printf("%s: Found fsboot xref at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, fsboot_xref));
+
+    return fsboot_xref;
+}
+
+void* find_auto_boot(struct iboot_img* iboot_in) {
+    printf("%s: Entering...\n", __FUNCTION__);
+
+    void* false_str = memstr(iboot_in->buf, iboot_in->len, "false");
+    if (!false_str) {
+        printf("%s: Failed to find false str!\n", __FUNCTION__);
+        return 0;
+    }
+
+    printf("%s: Found false at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, false_str));
+
+    void* false_xref = iboot_memmem(iboot_in, false_str);
+    if (!false_xref) {
+        printf("%s: Failed to find false xref!\n", __FUNCTION__);
+        return 0;
+    }
+
+    printf("%s: Found false xref at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, false_xref));
+
+    return false_xref;
 }

@@ -48,4 +48,5 @@ void* find_null_str(void* _mov_insn, int reg);
 void* find_kloader_addr(struct iboot_img* iboot_in);
 void* find_usb_wait_for_image(struct iboot_img* iboot_in);
 void* find_fsboot_boot_command(struct iboot_img* iboot_in);
+void* find_auto_boot(struct iboot_img* iboot_in);
 #endif
