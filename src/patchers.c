@@ -650,34 +650,34 @@ int patch_boot_mode(struct iboot_img* iboot_in, int mode) {
     
     void* firstBL = bl_search_down(var_ldr+4, 0x10);
     if(!firstBL) {
-        printf("%s: Unable to find firstBL!\n", __FUNCTION__, "debug-uarts");
+        printf("%s: Unable to find firstBL!\n", __FUNCTION__);
         return 0;
     }
     void* secondBL = bl_search_down(firstBL+4, 0x10);
     if(!secondBL) {
-        printf("%s: Unable to find secondBL!\n", __FUNCTION__, "debug-uarts");
+        printf("%s: Unable to find secondBL!\n", __FUNCTION__);
         return 0;
     }
     void* thefunc = bl_search_down(secondBL+4, 0x10);
     if(!thefunc) {
-        printf("%s: Unable to find thefunc!\n", __FUNCTION__, "debug-uarts");
+        printf("%s: Unable to find thefunc!\n", __FUNCTION__);
         return 0;
     }
     
     void *afterBL = bl_search_down(thefunc+4, 0x10);
     if(!afterBL) {
-        printf("%s: Unable to find afterBL!\n", __FUNCTION__, "debug-uarts");
+        printf("%s: Unable to find afterBL!\n", __FUNCTION__);
         return 0;
     }
     
     if (afterBL-4 == thefunc) {
-        printf("%s: afterbl is too close!\n", __FUNCTION__, "debug-uarts");
+        printf("%s: afterbl is too close!\n", __FUNCTION__);
         return 0;
     }
     
     uint32_t *dst = resolve_bl32(thefunc);
     if(!afterBL) {
-        printf("%s: Unable to find dst!\n", __FUNCTION__, "debug-uarts");
+        printf("%s: Unable to find dst!\n", __FUNCTION__);
         return 0;
     }
     
