@@ -26,6 +26,18 @@
 #define MOVW_R0_NEG_1 0x4ff0ff30
 #define MOV_NEGS_R0_1 0x01204042
 
+// "platform/s5l8930x/init.c"
+#define PLATFORM_INIT "platform/s5l"
+#define PLATFORM_8920 bswap32(0x38393230)
+#define PLATFORM_8922 bswap32(0x38393232)
+#define PLATFORM_8930 bswap32(0x38393330)
+#define PLATFORM_8940 bswap32(0x38393430)
+#define PLATFORM_8942 bswap32(0x38393432)
+#define PLATFORM_8945 bswap32(0x38393435)
+#define PLATFORM_8947 bswap32(0x38393437)
+#define PLATFORM_8950 bswap32(0x38393530)
+#define PLATFORM_8955 bswap32(0x38393535)
+
 void* find_bl_verify_shsh(struct iboot_img* iboot_in);
 void* find_rsa_check_3_4(struct iboot_img* iboot_in);
 void* find_ldr_ecid(struct iboot_img* iboot_in);
@@ -49,4 +61,5 @@ void* find_kloader_addr(struct iboot_img* iboot_in);
 void* find_usb_wait_for_image(struct iboot_img* iboot_in);
 void* find_fsboot_boot_command(struct iboot_img* iboot_in);
 void* find_auto_boot(struct iboot_img* iboot_in);
+void* find_platform(struct iboot_img* iboot_in);
 #endif

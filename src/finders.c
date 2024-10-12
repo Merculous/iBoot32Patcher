@@ -593,3 +593,17 @@ void* find_auto_boot(struct iboot_img* iboot_in) {
 
     return false_xref;
 }
+
+void* find_platform(struct iboot_img* iboot_in) {
+    printf("%s: Entering...\n", __FUNCTION__);
+
+    void* init_str = memstr(iboot_in->buf, iboot_in->len, PLATFORM_INIT);
+    if (!init_str) {
+        printf("%s: Failed to find platform init string!\n", __FUNCTION__);
+        return 0;
+    }
+
+    printf("%s: Found platform init string at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, init_str));
+
+    return init_str;
+}

@@ -25,8 +25,8 @@
 #define DEBUG_ENABLED_DTRE_VAR_STR "debug-enabled"
 #define DEFAULT_BOOTARGS_STR "rd=md0 nand-enable-reformat=1 -progress"
 #define RELIANCE_CERT_STR "Reliance on this certificate"
-#define PLATFORM_920_STR "platform/s5l8920x/init.c"
-#define PLATFORM_940_STR "platform/s5l8940x/init.c"
+#define IBOOT_TYPE_IBSS bswap32(0x69425353)
+#define IBOOT_TYPE_IBEC bswap32(0x69424543)
 
 int patch_boot_args(struct iboot_img* iboot_in, const char* boot_args);
 int patch_env_boot_args(struct iboot_img* iboot_in);

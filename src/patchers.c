@@ -870,7 +870,7 @@ int patch_dualboot_ibss(struct iboot_img* iboot_in) {
     printf("%s: Entering...\n", __FUNCTION__);
 
     uint32_t iBootType = get_iBoot_type(iboot_in);
-    if (iBootType != bswap32(0x69425353)) {
+    if (iBootType != IBOOT_TYPE_IBSS) {
         printf("%s: This image is not an iBSS!\n", __FUNCTION__);
         return 0;
     }
@@ -890,19 +890,26 @@ int patch_dualboot_ibss(struct iboot_img* iboot_in) {
 
     printf("%s: Found kloader MOV at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, kloader_addr));
 
-    void* platform = memstr(iboot_in->buf, iboot_in->len, PLATFORM_920_STR);
-    if (!platform) {
-        void* platform = memstr(iboot_in->buf, iboot_in->len, PLATFORM_940_STR);
-        if (!platform) {
-            printf("%s: Image is not 920 or 940. Using default patch!\n", __FUNCTION__);
-            *(uint32_t*)kloader_addr = bswap32(0xC7F6D074);
-        } else {
-            printf("%s: Using 940 patch!\n", __FUNCTION__);
-            *(uint32_t*)kloader_addr = bswap32(0xCBF6D074);
-        }
-    } else {
+    void* platform_str = find_platform(iboot_in);
+    if (!platform_str) {
+        printf("%s: Failed to get platform!\n", __FUNCTION__);
+        return 0;
+    }
+
+    uint32_t* platform = *(uint32_t*)(platform_str + strlen(PLATFORM_INIT));
+
+    if (platform == PLATFORM_8920 || platform == PLATFORM_8922) {
         printf("%s: Using 920 patch!\n", __FUNCTION__);
         *(uint32_t*)kloader_addr = bswap32(0xC6F6D071);
+    } else if (platform == PLATFORM_8930 || platform == PLATFORM_8950 || platform == PLATFORM_8955) {
+        printf("%s: Image is not 920 or 940. Using default patch!\n", __FUNCTION__);
+        *(uint32_t*)kloader_addr = bswap32(0xC7F6D074);
+    } else if (platform == PLATFORM_8940 || platform == PLATFORM_8942 || platform == PLATFORM_8945 || platform == PLATFORM_8947) {
+        printf("%s: Using 940 patch!\n", __FUNCTION__);
+        *(uint32_t*)kloader_addr = bswap32(0xCBF6D074);
+    } else {
+        printf("%s: Unsupported platform %x", __FUNCTION__, platform);
+        return 0;
     }
 
     void* usb = find_usb_wait_for_image(iboot_in);
@@ -934,7 +941,7 @@ int patch_dualboot_ibec(struct iboot_img* iboot_in) {
     printf("%s: Entering...\n", __FUNCTION__);
 
     uint32_t iBootType = get_iBoot_type(iboot_in);
-    if (iBootType != bswap32(0x69424543)) {
+    if (iBootType != IBOOT_TYPE_IBEC) {
         printf("%s: This image is not an iBEC!\n", __FUNCTION__);
         return 0;
     }
@@ -980,9 +987,9 @@ int patch_dualboot(struct iboot_img* iboot_in) {
     uint32_t imageType = get_iBoot_type(iboot_in);
     int ret = 0;
 
-    if (imageType == bswap32(0x69425353)) {
+    if (imageType == IBOOT_TYPE_IBSS) {
         ret = patch_dualboot_ibss(iboot_in);
-    } else if (imageType == bswap32(0x69424543)) {
+    } else if (imageType == IBOOT_TYPE_IBEC) {
         ret = patch_dualboot_ibec(iboot_in);
     } else {
         printf("%s: Image must be either iBSS or iBEC!\n", __FUNCTION__);
