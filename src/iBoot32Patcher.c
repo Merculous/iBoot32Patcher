@@ -64,6 +64,7 @@ int main(int argc, char** argv) {
     bool kaslr_patch = false;
     bool i433_patch = false;
     bool logo4_patch = false;
+    bool iloader_patch = false;
     char* custom_color = NULL;
 	struct iboot_img iboot_in;
 	memset(&iboot_in, 0, sizeof(iboot_in));
@@ -86,6 +87,7 @@ int main(int argc, char** argv) {
         printf("\t--bgcolor RRGGBB\tApply custom background color\n");
         printf("\t--logo4\t\t\tFix AppleLogo for iOS 4 iBoot\n");
         printf("\t--433\t\t\tApply enable jump to iBoot patch for iOS 4.3.3 or lower\n");
+        printf("\t--iloader\t\tApply patches needed for DRA (iOS 7 iBoot exploit)\n");
 		return -1;
 	}
 
@@ -152,6 +154,10 @@ int main(int argc, char** argv) {
         
         if(HAS_ARG("--433", 0)) {
             i433_patch = true;
+        }
+
+        if(HAS_ARG("--iloader", 0)) {
+            iloader_patch = true;
         }
 	}
     
@@ -351,6 +357,15 @@ int main(int argc, char** argv) {
     	ret = patch_setenv_cmd(&iboot_in);
     	if(!ret) {
             printf("%s: Error doing patch_setenv_cmd()!\n", __FUNCTION__);
+            free(iboot_in.buf);
+            return -1;
+        }
+    }
+
+    if (iloader_patch) {
+        ret = patch_iloader(&iboot_in);
+        if(!ret) {
+            printf("%s: Error doing iloader_patch()!\n", __FUNCTION__);
             free(iboot_in.buf);
             return -1;
         }

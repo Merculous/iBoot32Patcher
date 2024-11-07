@@ -31,6 +31,10 @@ void* bl_search_up(const void* start_addr, int len) {
     return pattern_search(start_addr, len, 0xD000F000, 0xD000F800, -1);
 }
 
+void* blx_search_up(const void* start_addr, int len) {
+    return pattern_search(start_addr, len, 0xE800F000, 0xE800F800, -1);
+}
+
 uint32_t sign_extend_11_32(uint32_t x) {
     const int bits = 11;
     uint32_t m = 1u << (bits - 1);
@@ -363,6 +367,16 @@ void* pattern_search(const void* addr, int len, int pattern, int mask, int step)
 void* push_r4_r7_lr_search_up(const void* start_addr, int len) {
     // F0 B5
     return pattern_search(start_addr, len, 0x0000B5F0, 0x0000FFFF, -2);
+}
+
+void* push_r7_lr_search_up(const void* start_addr, int len) {
+    // 80 B5
+    return pattern_search(start_addr, len, 0x0000B580, 0x0000FFFF, -2);
+}
+
+void* push_r7_lr_search_down(const void* start_addr, int len) {
+    // 80 B5
+    return pattern_search(start_addr, len, 0x0000B580, 0x0000FFFF, 2);
 }
 
 void* pop_search(const void* start_addr, int len, int searchup) {

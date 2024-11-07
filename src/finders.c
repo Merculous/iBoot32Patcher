@@ -453,3 +453,224 @@ void* find_boot_ramdisk_ldr(struct iboot_img* iboot_in) {
     printf("%s: Found boot-ramdisk LDR: %p\n", __FUNCTION__, GET_IBOOT_ADDR(iboot_in, boot_ramdisk_ldr));
     return boot_ramdisk_ldr;
 }
+
+void* find_iloader_offsets(struct iboot_img* iboot_in) {
+    uint32_t breakpoint1_addr = GET_IBOOT_FILE_OFFSET(iboot_in, memmem(iboot_in -> buf, iboot_in -> len, "\x2f\x28", strlen("\x2f\x28")));
+    if (!breakpoint1_addr) {
+        printf("%s: Failed to find cmp instruction\n", __FUNCTION__);
+        return 0;
+    }
+    breakpoint1_addr += 0x44;
+    printf("%s: Found breakpoint1_addr at %p\n", __FUNCTION__, breakpoint1_addr);
+    
+    /* fuck1-2-3_ADDR */
+    void* fuck1_ADDR = memstr(iboot_in->buf, iboot_in->len, "\x48\x24\xb0\xfa");
+    fuck1_ADDR += 0x14;
+    if (!fuck1_ADDR) {
+        printf("%s: Failed to find mov instruction\n", __FUNCTION__);
+        return 0;
+    }
+    printf("%s: Found fuck1_ADDR at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in,fuck1_ADDR));
+    fuck1_ADDR += 0x16;
+    printf("%s: Found fuck2_ADDR at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in,fuck1_ADDR));
+    uint32_t fuck3_ADDR_str = GET_IBOOT_ADDR(iboot_in, memmem(iboot_in -> buf, iboot_in -> len, "_memalign must be a power of two", strlen("_memalign must be a power of two")));
+    if (!fuck3_ADDR_str) {
+        printf("%s: Failed to find str\n", __FUNCTION__);
+    }
+    void* fuck3_ADDR = find_next_LDR_insn_with_value(iboot_in, fuck3_ADDR_str);
+    if (!fuck3_ADDR) {
+        printf("%s: Failed to find ldr instruction\n", __FUNCTION__);
+    }
+    fuck3_ADDR -= 0x22;
+    printf("%s: Found fuck3_ADDR at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in,fuck3_ADDR));
+    
+    /* wait_for_event_ADDR */
+    uint32_t wait_for_event_ADDR_str = GET_IBOOT_ADDR(iboot_in, memmem(iboot_in -> buf, iboot_in -> len, "0 < cp->c_resid", strlen("0 < cp->c_resid")));
+    void* wait_for_event_ADDR = find_next_LDR_insn_with_value(iboot_in, wait_for_event_ADDR_str);
+    void* bl1 = bl_search_down(wait_for_event_ADDR,0x100);
+    uint32_t *dst1 = resolve_bl32(bl1);
+    void* bl2 = bl_search_down(dst1,0x100);
+    uint32_t *dst2 = resolve_bl32(bl2-0x4);
+    printf("%s: Found wait_for_event_ADDR at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, (void*)dst2));
+    
+    /* hugechunk_ADDR */
+    void* hugechunk_ADDR = memstr(iboot_in->buf, iboot_in->len, "\x46\xf2\x6f\x70\xc6\xf6\x6f\x40");
+    hugechunk_ADDR -= 0x58;
+    printf("%s: Found hugechunk_ADDR at %p\n", __FUNCTION__,GET_IBOOT_FILE_OFFSET(iboot_in,hugechunk_ADDR));
+    
+    /* gpio_pin_state_ADDR */
+    /*
+     void* unknown_str = memstr(iboot_in->buf, iboot_in->len, "\x3a\x3a\x0a\x00");
+     uint32_t* unknown_xref = iboot_memmem(iboot_in, unknown_str);
+     void* unknown_ldr = ldr_to(unknown_xref);
+     unknown_ldr -= 0x10;
+     printf("%s: Found ldr at %p\n", __FUNCTION__,(void*) GET_IBOOT_FILE_OFFSET(iboot_in, unknown_ldr));
+     void* bl_gpio = bl_search_up(unknown_ldr, 0x100);
+     printf("%s: Found bl at %p\n", __FUNCTION__,(void*) GET_IBOOT_FILE_OFFSET(iboot_in, bl_gpio));
+     uint32_t *dst = resolve_bl32(bl_gpio);
+     printf("%s: Found gpio_pin_state_ADDR at %p\n", __FUNCTION__, (void*) GET_IBOOT_FILE_OFFSET(iboot_in, (void*)dst-1));
+     */ // this offset changes on some devices, it can't be universally found
+    
+    /* readp_ADDR */
+    
+    void* readp_ADDR = memstr(iboot_in->buf, iboot_in->len, "\xD0\xF8\x24\x90");
+    readp_ADDR -= 0xC;
+    printf("%s: Found readp_ADDR at %p\n", __FUNCTION__,GET_IBOOT_FILE_OFFSET(iboot_in,readp_ADDR));
+    
+    /* get_mem_size_ADDR */
+    /*
+    void* get_mem_size_ADDR = memstr(iboot_in->buf, iboot_in->len, "\xA5\xFB\x01\x02");
+    get_mem_size_ADDR -= 0x18;
+    printf("%s: Found get_mem_size_ADDR at %p\n", __FUNCTION__,GET_IBOOT_FILE_OFFSET(iboot_in,get_mem_size_ADDR));
+     */ // this offset changes on some devices, it can't be universally found
+    
+    /* putchar_ADDR */
+    
+    void* putchar_ADDR = memstr(iboot_in->buf, iboot_in->len, "\x01\xAF\x04\xbf");
+    putchar_ADDR -= 0x6;
+    printf("%s: Found putchar_ADDR at %p\n", __FUNCTION__,GET_IBOOT_FILE_OFFSET(iboot_in,putchar_ADDR));
+    
+    /* adjust_stack_ADDR */
+    
+    void* main_str = memstr(iboot_in->buf, iboot_in->len, "\x6d\x61\x69\x6e\x00");
+    uint32_t* main_xref = iboot_memmem(iboot_in, main_str);
+    void* main_ldr = ldr_to(main_xref);
+    main_ldr -= 0x8;
+    uint32_t *dst = resolve_bl32(main_ldr);
+    printf("%s: Found adjust_stack_ADDR at %p\n", __FUNCTION__, (void*) GET_IBOOT_FILE_OFFSET(iboot_in, (void*)dst-1));
+    
+    /* adjust_environ_ADDR */
+    
+    void* false_resume_str = memstr(iboot_in->buf, iboot_in->len, "false == resume");
+    uint32_t* false_resume_xref = iboot_memmem(iboot_in, false_resume_str);
+    void* adjust_environ_ADDR = false_resume_xref;
+    printf("%s: Found adjust_environ_ADDR at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in,adjust_environ_ADDR + 4));
+    
+    /* disable_interrupts_ADDR */
+    
+    void* disable_interrupts_ADDR = memstr(iboot_in->buf, iboot_in->len, "\xb2\xf5\x7a\x7f");
+    disable_interrupts_ADDR += 0x1c;
+    uint32_t *dst3 = resolve_bl32(disable_interrupts_ADDR);
+    printf("%s: Found disable_interrupts_ADDR at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, (void*)dst3-1));
+    
+    /* cache_stuff_ADDR */
+    
+    void* mov_instr = memstr(iboot_in->buf, iboot_in->len, "\x4e\xf2\xf8\x71\xcf\xf6\xbf\x71");
+    void* cache_stuff_ADDR = push_r7_lr_search_up(mov_instr, 0x500);
+    printf("%s: Found cache_stuff_ADDR at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in,cache_stuff_ADDR));
+    
+    /* wtf_ADDR */
+    
+    uint32_t wtf_ADDR = GET_IBOOT_ADDR(iboot_in, memmem(iboot_in -> buf, iboot_in -> len, "\x50\xE8\x00\x1F\x21\xF0\x01\x01\x01\x60\x70\x47", strlen("\x50\xE8\x00\x1F\x21\xF0\x01\x01\x01\x60\x70\x47")));
+    if (!wtf_ADDR) {
+        printf("%s: Failed to find wtf_ADDR\n", __FUNCTION__);
+        printf("%s: You have to find it\n", __FUNCTION__);
+    }
+    printf("%s: Found wtf_ADDR at %p\n", __FUNCTION__,wtf_ADDR);
+    
+    /* iboot_warmup_ADDR */
+    
+    void* iboot_warmup_ADDR = memstr(iboot_in->buf, iboot_in->len, "\x1f\x00\xc0\xe3");
+    if (!iboot_warmup_ADDR) {
+        printf("%s: Failed to find wtf_ADDR\n", __FUNCTION__);
+        printf("%s: You have to find it\n", __FUNCTION__);
+    }
+    iboot_warmup_ADDR += 0x5c;
+    printf("%s: Found iboot_warmup_ADDR at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in,iboot_warmup_ADDR));
+    
+    /* iboot_start_ADDR */
+    
+    uint32_t root_str = GET_IBOOT_ADDR(iboot_in, memmem(iboot_in -> buf, iboot_in -> len, "root filesystem mount failed", strlen("root filesystem mount failed")));
+    void* root_ldr = find_next_LDR_insn_with_value(iboot_in, root_str);
+    void* iboot_start_ADDR = push_r7_lr_search_down(root_ldr, 0x500);
+    printf("%s: Found iboot_start_ADDR at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in,iboot_start_ADDR));
+    
+    /* main_task_ADDR */
+    
+    void* main_task_ADDR = push_r4_r7_lr_search_up(hugechunk_ADDR, 0x500);
+    printf("%s: Found main_task_ADDR at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in,main_task_ADDR));
+    
+    /* panic_ADDR */
+    
+    uint32_t stack_str = GET_IBOOT_ADDR(iboot_in, memmem(iboot_in -> buf, iboot_in -> len, "stack corrupted", strlen("stack corrupted")));
+    void* stack_ldr = find_next_LDR_insn_with_value(iboot_in, stack_str);
+    void* panic_ADDR = push_r4_r7_lr_search_up(stack_ldr, 0x500);
+    printf("%s: Found panic_ADDR at %p\n", __FUNCTION__,GET_IBOOT_FILE_OFFSET(iboot_in,panic_ADDR-2));
+    
+    /* system_init_ADDR */
+    
+    void* system_init_ADDR = bl_search_down(iboot_start_ADDR, 0x100);
+    system_init_ADDR += 4;
+    uint32_t *dst4 = resolve_bl32(system_init_ADDR);
+    printf("%s: Found system_init_ADDR at %p\n", __FUNCTION__, (void*) GET_IBOOT_FILE_OFFSET(iboot_in, (void*)dst4-1));
+
+    /* task_create_ADDR */
+    
+    system_init_ADDR += 10;
+    void* task_create_ADDR = bl_search_down(system_init_ADDR, 0x20);
+    uint32_t *dst5 = resolve_bl32(task_create_ADDR);
+    printf("%s: Found task_create_ADDR at %p\n", __FUNCTION__, (void*) GET_IBOOT_FILE_OFFSET(iboot_in, (void*)dst5-1));
+    
+    /* task_start_ADDR */
+    
+    task_create_ADDR += 4;
+    uint32_t *dst6 = resolve_bl32(task_create_ADDR);
+    printf("%s: Found task_start_ADDR at %p\n", __FUNCTION__, (void*) GET_IBOOT_FILE_OFFSET(iboot_in, (void*)dst6-1));
+    
+    /* task_exit_ADDR */
+    
+    char *next_bl = bl_search_down(dst6,0x100);
+    void* task_exit_ADDR = push_r7_lr_search_down(next_bl, 0x500);
+    printf("%s: Found task_exit_ADDR at %p\n", __FUNCTION__,GET_IBOOT_FILE_OFFSET(iboot_in, task_exit_ADDR));
+    
+    /* printf_ADDR */
+    
+    uint32_t panic_str = GET_IBOOT_ADDR(iboot_in, memmem(iboot_in -> buf, iboot_in -> len, "Panic saved, full reset.", strlen("Panic saved, full reset.")));
+    void* panic_ldr = find_next_LDR_insn_with_value(iboot_in, panic_str);
+    void* printf_ADDR = bl_search_down(panic_ldr, 0x100);
+    uint32_t *dst7 = resolve_bl32(printf_ADDR);
+    printf("%s: Found printf_ADDR at %p\n", __FUNCTION__, (void*) GET_IBOOT_FILE_OFFSET(iboot_in, (void*)dst7-1));
+    
+    /* malloc_ADDR */
+    
+    uint32_t boot_ramdisk_str = GET_IBOOT_ADDR(iboot_in, memmem(iboot_in -> buf, iboot_in -> len, "boot-ramdisk", strlen("boot-ramdisk")));
+    void* boot_ramdisk_ldr = find_next_LDR_insn_with_value(iboot_in, boot_ramdisk_str);
+    void* push_instr = push_r4_r7_lr_search_up(boot_ramdisk_ldr, 0x500);
+    void* malloc_ADDR = bl_search_down(push_instr, 0x100);
+    uint32_t *dst8 = resolve_bl32(malloc_ADDR);
+    printf("%s: Found malloc_ADDR at %p\n", __FUNCTION__, (void*) GET_IBOOT_FILE_OFFSET(iboot_in, (void*)dst8-1));
+    
+    
+    /* free_ADDR */
+    
+    uint32_t ramdisk_file_str = GET_IBOOT_ADDR(iboot_in, memmem(iboot_in -> buf, iboot_in -> len, "ramdisk file invalid", strlen("ramdisk file invalid")));
+    void* ramdisk_file_ldr = find_next_LDR_insn_with_value(iboot_in,ramdisk_file_str);
+    void* push_instr2 = find_next_CMP_insn_with_value(ramdisk_file_ldr, 0x100, 0);
+    void* free_ADDR = bl_search_down(push_instr2, 0x100);
+    uint32_t *dst9 = resolve_bl32(free_ADDR);
+    printf("%s: Found free_ADDR at %p\n", __FUNCTION__, (void*) GET_IBOOT_FILE_OFFSET(iboot_in, (void*)dst9-1));
+    
+    /* create_envvar_ADDR */
+    
+    uint32_t build_style_str = GET_IBOOT_ADDR(iboot_in, memmem(iboot_in -> buf, iboot_in -> len, "build-style", strlen("build-style")));
+    void* build_style_ldr = find_next_LDR_insn_with_value(iboot_in,build_style_str);
+    void* create_envvar_ADDR = bl_search_down(build_style_ldr, 0x100);
+    uint32_t *dst10 = resolve_bl32(create_envvar_ADDR);
+    printf("%s: Found create_envvar_ADDR at %p\n", __FUNCTION__, (void*) GET_IBOOT_FILE_OFFSET(iboot_in, (void*)dst10-1));
+    
+    /* bcopy_ADDR */
+    
+    uint32_t hfs_str = GET_IBOOT_ADDR(iboot_in, memmem(iboot_in -> buf, iboot_in -> len, "HFSInitPartition: %p", strlen("HFSInitPartition: %p")));
+    void* hfs_ldr = find_next_LDR_insn_with_value(iboot_in,hfs_str);
+    void* bcopy_ADDR = blx_search_up(hfs_ldr, 0x500);
+    uint32_t *dst11 = resolve_bl32(bcopy_ADDR);
+    printf("%s: Found bcopy_ADDR at %p\n", __FUNCTION__, (void*) GET_IBOOT_FILE_OFFSET(iboot_in, (void*)dst11));
+    
+    /* decompress_lzss_ADDR */
+    
+    void* mov_instr1 = memstr(iboot_in->buf, iboot_in->len, "\x46\xf2\x62\x72");
+    void* decompress_lzss_ADDR = bl_search_up(mov_instr1, 0x500);
+    uint32_t *dst12 = resolve_bl32(decompress_lzss_ADDR);
+    printf("%s: Found decompress_lzss_ADDR at %p\n", __FUNCTION__, (void*) GET_IBOOT_FILE_OFFSET(iboot_in, (void*)dst12-1));
+    return 0;
+}

@@ -866,3 +866,12 @@ int patch_bgcolor(struct iboot_img* iboot_in, const char* bgcolor) {
     return 1;
 }
 
+int patch_iloader(struct iboot_img* iboot_in) {
+    printf("%s: Entering...\n", __FUNCTION__);
+    
+    find_iloader_offsets(iboot_in);
+    
+    printf("%s: Leaving...\n", __FUNCTION__);
+    
+    return 1;
+}
