@@ -26,8 +26,10 @@
 #define MOVW_R0_NEG_1 0x4ff0ff30
 #define MOV_NEGS_R0_1 0x01204042
 
-// "platform/s5l8930x/init.c"
-#define PLATFORM_INIT "platform/s5l"
+// platform/s5l8950x/init.c
+#define PLATFORM_INIT_STR "platform/s5l"
+#define PLATFORM_8720 bswap32(0x38373230)
+#define PLATFORM_8900 bswap32(0x38393030)
 #define PLATFORM_8920 bswap32(0x38393230)
 #define PLATFORM_8922 bswap32(0x38393232)
 #define PLATFORM_8930 bswap32(0x38393330)
