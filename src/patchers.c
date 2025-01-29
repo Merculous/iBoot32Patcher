@@ -128,12 +128,12 @@ int patch_boot_args(struct iboot_img* iboot_in, const char* boot_args) {
 
 	printf("%s: Found CMP R%d, #%d at %p\n", __FUNCTION__, cmp_insn->rd, cmp_insn->offset, GET_IBOOT_FILE_OFFSET(iboot_in, _cmp_insn));
 
-	/* Find the next IT EQ/IT NE instruction following the CMP Rd, #0 instruction... (kinda hacky) */
-	while(*(uint16_t*)arm32_thumb_IT_insn != ARM32_THUMB_IT_EQ && *(uint16_t*)arm32_thumb_IT_insn != ARM32_THUMB_IT_NE) {
+	/* Find the next IT EQ/IT NE/ITE NE instruction following the CMP Rd, #0 instruction... (kinda hacky) */
+	while(*(uint16_t*)arm32_thumb_IT_insn != ARM32_THUMB_IT_EQ && *(uint16_t*)arm32_thumb_IT_insn != ARM32_THUMB_IT_NE && *(uint16_t*)arm32_thumb_IT_insn != ARM32_THUMB_ITE_NE) {
 		arm32_thumb_IT_insn++;
 	}
 
-	printf("%s: Found IT EQ/IT NE at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, arm32_thumb_IT_insn));
+	printf("%s: Found IT EQ/IT NE/ITE NE at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, arm32_thumb_IT_insn));
 
 	/* MOV Rd, Rs instruction usually follows right after the IT instruction. */
 	struct arm32_thumb_hi_reg_op* mov_insn = (struct arm32_thumb_hi_reg_op*) (arm32_thumb_IT_insn + 2);

@@ -27,6 +27,7 @@
 
 #define ARM32_THUMB_IT_NE __builtin_bswap16(0x18BF)
 #define ARM32_THUMB_IT_EQ __builtin_bswap16(0x08BF)
+#define ARM32_THUMB_ITE_NE __builtin_bswap16(0x14BF)
 
 struct arm32_thumb_LDR_T3 {
 	uint8_t rn : 4;
