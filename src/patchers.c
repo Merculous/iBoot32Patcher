@@ -896,7 +896,7 @@ int patch_dualboot_ibss(struct iboot_img* iboot_in) {
         return 0;
     }
 
-    uint32_t platform = *(uint32_t*)(platform_str + strlen(PLATFORM_INIT));
+    uint32_t platform = *(uint32_t*)(platform_str + strlen(PLATFORM_INIT_STR));
 
     if (platform == PLATFORM_8920 || platform == PLATFORM_8922) {
         printf("%s: Using 920 patch!\n", __FUNCTION__);
