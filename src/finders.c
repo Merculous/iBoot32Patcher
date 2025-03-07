@@ -597,7 +597,7 @@ void* find_auto_boot(struct iboot_img* iboot_in) {
 void* find_platform(struct iboot_img* iboot_in) {
     printf("%s: Entering...\n", __FUNCTION__);
 
-    void* platformStr = memstr(iboot_in->buf, iboot_in->len, "s5l");
+    void* platformStr = memstr(iboot_in->buf, iboot_in->len, PLATFORM_INIT_STR);
     if (!platformStr) {
         printf("%s: Failed to find platform string!\n", __FUNCTION__);
         return 0;

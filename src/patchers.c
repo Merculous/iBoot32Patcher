@@ -908,7 +908,7 @@ int patch_dualboot_ibss(struct iboot_img* iboot_in) {
         printf("%s: Using 940 patch!\n", __FUNCTION__);
         *(uint32_t*)kloader_addr = bswap32(0xCBF6D074);
     } else {
-        printf("%s: Unsupported platform %x", __FUNCTION__, platform);
+        printf("%s: Unsupported platform %x\n", __FUNCTION__, platform);
         return 0;
     }
 
