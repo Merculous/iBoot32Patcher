@@ -124,21 +124,24 @@ int patch_boot_args(struct iboot_img* iboot_in, const char* boot_args) {
 	}
 
 	struct arm32_thumb* cmp_insn = (struct arm32_thumb*) _cmp_insn;
-	void* arm32_thumb_IT_insn = _cmp_insn;
+	void* arm32_thumb_IT_insn = _cmp_insn + 2;
 
 	printf("%s: Found CMP R%d, #%d at %p\n", __FUNCTION__, cmp_insn->rd, cmp_insn->offset, GET_IBOOT_FILE_OFFSET(iboot_in, _cmp_insn));
 
 	/* Find the next IT EQ/IT NE/ITE NE instruction following the CMP Rd, #0 instruction... (kinda hacky) */
-	while(*(uint16_t*)arm32_thumb_IT_insn != ARM32_THUMB_IT_EQ && *(uint16_t*)arm32_thumb_IT_insn != ARM32_THUMB_IT_NE && *(uint16_t*)arm32_thumb_IT_insn != ARM32_THUMB_ITE_NE) {
-		arm32_thumb_IT_insn++;
-	}
-
-	printf("%s: Found IT EQ/IT NE/ITE NE at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, arm32_thumb_IT_insn));
+	if(
+        *(uint16_t*)arm32_thumb_IT_insn == ARM32_THUMB_IT_EQ ||
+        *(uint16_t*)arm32_thumb_IT_insn == ARM32_THUMB_IT_NE ||
+        *(uint16_t*)arm32_thumb_IT_insn == ARM32_THUMB_ITE_NE) {
+		printf("%s: Found IT EQ/IT NE/ITE NE at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, arm32_thumb_IT_insn));
+	} else {
+        printf("%s: Did not find IT instruction, continuing anyway!\n", __FUNCTION__);
+    }
 
 	/* MOV Rd, Rs instruction usually follows right after the IT instruction. */
-	struct arm32_thumb_hi_reg_op* mov_insn = (struct arm32_thumb_hi_reg_op*) (arm32_thumb_IT_insn + 2);
+	struct arm32_thumb_hi_reg_op* mov_insn = (struct arm32_thumb_hi_reg_op*) (arm32_thumb_IT_insn);
 
-	printf("%s: Found MOV R%d, R%d at %p\n", __FUNCTION__, mov_insn->rd, mov_insn->rs, GET_IBOOT_FILE_OFFSET(iboot_in, arm32_thumb_IT_insn + 2));
+	printf("%s: Found MOV R%d, R%d at %p\n", __FUNCTION__, mov_insn->rd, mov_insn->rs, GET_IBOOT_FILE_OFFSET(iboot_in, arm32_thumb_IT_insn));
 
 	/* Find the last LDR Rd which holds the null string pointer... */
 	int null_str_reg = (ldr_rd_boot_args->rd == mov_insn->rs) ? mov_insn->rd : mov_insn->rs;
@@ -183,6 +186,7 @@ int patch_boot_args(struct iboot_img* iboot_in, const char* boot_args) {
 	printf("%s: Leaving...\n", __FUNCTION__);
 	return 1;
 }
+
 int patch_env_boot_args(struct iboot_img* iboot_in) {
     printf("%s: Finding rd=md0 LDR\n", __FUNCTION__);
     char* bootargs_ldr =  find_next_LDR_insn_with_str(iboot_in, DEFAULT_BOOTARGS_STR);
