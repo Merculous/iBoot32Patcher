@@ -136,6 +136,26 @@ int patch_boot_args(struct iboot_img* iboot_in, const char* boot_args) {
 		printf("%s: Found IT EQ/IT NE/ITE NE at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, arm32_thumb_IT_insn));
 	} else {
         printf("%s: Did not find IT instruction, continuing anyway!\n", __FUNCTION__);
+
+        /* NOTE: For iPod2,1 or any other image that does not have IT instruction, look for CMP above boot-args */
+
+        void* other_cmp = find_next_CMP_insn_with_value(ldr_rd_boot_args - 0x10, 0x20, 0);
+
+        if (!other_cmp) {
+            printf("%s: Could not find CMP Rx, #0!\n", __FUNCTION__);
+            return 0;
+        }
+
+        printf("%s: Found CMP Rx, #0 at %p!\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, other_cmp));
+
+        int os_vers = get_os_version(iboot_in);
+        
+        if (os_vers <= 4) {
+            struct arm32_thumb* _other_insn = (struct arm32_thumb*)other_cmp;
+            _other_insn->offset = 1;
+        }
+
+        return 1;
     }
 
 	/* MOV Rd, Rs instruction usually follows right after the IT instruction. */
