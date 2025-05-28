@@ -17,11 +17,11 @@ iBoot32Patcher - A Universal 32-bit iBoot patcher for iPhone OS 2.0 --> iOS 10
 
 Compiling
 ---------------------------------------------------
-	clang iBoot32Patcher.c finders.c functions.c patchers.c -Wno-multichar -I. -o iBoot32Patcher
+	make
 
 Sample Usage
 ---------------------------------------------------
-	iBoot32Patcher iBoot.n49.RELEASE.dfu.decrypted iBoot.n49.RELEASE.dfu.patched --rsa --debug -b "cs_enforcement_disable=1" -c "ticket" 0x80000000
+	iBoot32Patcher iBoot.n49.RELEASE.dfu.decrypted iBoot.n49.RELEASE.dfu.patched --debug -b "cs_enforcement_disable=1" -c "ticket" 0x80000000
 
 Bugs
 ---------------------------------------------------
