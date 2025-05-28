@@ -1,10 +1,16 @@
+CC = clang
+CFLAGS = -Wno-multichar -Wno-int-conversion -g
+CPPFLAGS = -I.
+NAME = iBoot32Patcher
+OBJS = src/finders.o src/functions.o src/iBoot32Patcher.o src/patchers.o
 
-CC=clang
-CFLAGS=-Wno-multichar -Wno-int-conversion src/*.c
-CPPFLAGS=-I.
-NAME=iBoot32Patcher
+all: $(NAME)
 
-all:
-	$(CC) $(CPPFLAGS) $(CFLAGS) -o $(NAME)
+$(NAME): $(OBJS)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(OBJS) -o $(NAME)
+
+src/%.o: src/%.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+
 clean:
-	rm -f iBoot32Patcher
+	rm -f $(NAME) $(OBJS)

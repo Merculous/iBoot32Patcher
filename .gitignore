@@ -2,3 +2,5 @@
 iBoot32Patcher
 *.bin
 *.img3
+*.o
+.vscode
