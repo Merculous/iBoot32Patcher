@@ -149,18 +149,10 @@ int patch_boot_args(struct iboot_img* iboot_in, const char* boot_args) {
     /* + 0x10: Some iBoots have the null string load after the CMP instruction... */
     int os_vers = get_os_version(iboot_in);
     if(os_vers <= 4) {
-        
-        if (*(uint16_t*)_cmp_insn == 0x2900){
-            *(uint8_t*)_cmp_insn = 0x01; //cmp R0, #0x1
-        } else {
-            _cmp_insn+=2;
-            if(*(uint16_t*)_cmp_insn == 0x2900){
-                *(uint8_t*)_cmp_insn = 0x01;
-            }
-        }
+        cmp_insn->offset = 1;
         return 1;
     }
-    
+
 	void* ldr_null_str = find_last_LDR_rd((uintptr_t) (_cmp_insn + 0x10), 0x200, null_str_reg);
 	if(!ldr_null_str) {
         
