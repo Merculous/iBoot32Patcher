@@ -220,10 +220,16 @@ void* find_rsa_check_3_4(struct iboot_img* iboot_in) {
     if(!rsa_mov_neg1) {
         printf("%s: Failed to find MOV.W R0, #0xFFFFFFFF!\n", __FUNCTION__);
 
-        void* rsa_movs_1 = pattern_search(bl_insn_3_xref + 0x150, 0x10, bswap32(MOV_NEGS_R0_1), bswap32(MOV_NEGS_R0_1), 1);
+        void* rsa_movs_1 = pattern_search(bl_insn_3_xref + 0x160, 0x10, bswap32(MOV_NEGS_R0_1), bswap32(MOV_NEGS_R0_1), 1);
         if(!rsa_movs_1) {
-            printf("%s: Failed to find MOVS R0, #1; NEGS R0, R0!\n", __FUNCTION__);
-            return 0;
+            printf("%s: Failed to find MOVS R0, #1; NEGS R0, R0! Adjusting offset!\n", __FUNCTION__);
+
+            void* rsa_movs_2 = pattern_search(bl_insn_3_xref + 0x150, 0x10, bswap32(MOV_NEGS_R0_1), bswap32(MOV_NEGS_R0_1), 1);
+            if (!rsa_movs_2) {
+                printf("%s: Failed to find MOVS R0, #1; NEGS R0, R0!\n", __FUNCTION__);
+                return 0;
+            }
+            rsa_movs_1 = rsa_movs_2;
         }
 
         printf("%s: Found MOVS R0, #1; NEGS R0, R0 at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, rsa_movs_1));
