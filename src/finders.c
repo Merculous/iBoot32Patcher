@@ -200,7 +200,7 @@ void* find_rsa_check_3_4(struct iboot_img* iboot_in) {
 
     printf("%s: Found CMP Rx, 0x14 at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, cmp_insn));
 
-    void* bl_insn_3 = bl_search_down(cmp_insn + 0x20, 0x20);
+    void* bl_insn_3 = bl_search_down(cmp_insn + 0x25, 0x20);
     if (!bl_insn_3) {
         printf("%s: Failed to find BL 3 instruction!\n", __FUNCTION__);
         return 0;
@@ -220,7 +220,7 @@ void* find_rsa_check_3_4(struct iboot_img* iboot_in) {
     if(!rsa_mov_neg1) {
         printf("%s: Failed to find MOV.W R0, #0xFFFFFFFF!\n", __FUNCTION__);
 
-        void* rsa_movs_1 = pattern_search(bl_insn_3_xref + 0x150, 0x20, bswap32(MOV_NEGS_R0_1), bswap32(MOV_NEGS_R0_1), 1);
+        void* rsa_movs_1 = pattern_search(bl_insn_3_xref + 0x150, 0x10, bswap32(MOV_NEGS_R0_1), bswap32(MOV_NEGS_R0_1), 1);
         if(!rsa_movs_1) {
             printf("%s: Failed to find MOVS R0, #1; NEGS R0, R0!\n", __FUNCTION__);
             return 0;
