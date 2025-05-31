@@ -142,38 +142,85 @@ void* find_ldr_sepo(struct iboot_img* iboot_in) {
 void* find_rsa_check_3_4(struct iboot_img* iboot_in) {
     printf("%s: Entering...\n", __FUNCTION__);
 
-    /* Find Apple Secure Boot Certification Authority */
-    void* rsa_cert_ldr = find_next_LDR_insn_with_str(iboot_in, RSA_STR);
-    if(!rsa_cert_ldr) {
-        printf("%s: Unable to find Certification LDR!\n", __FUNCTION__);
+    void* ldr_cert = find_next_LDR_insn_with_value(iboot_in, 'CERT');
+    if (!ldr_cert) {
+        printf("%s: Failed to find LDR Rx, CERT!\n", __FUNCTION__);
         return 0;
     }
 
-    printf("%s: Found %s LDR at %p\n", __FUNCTION__, RSA_STR, GET_IBOOT_FILE_OFFSET(iboot_in, rsa_cert_ldr));
+    printf("%s: Found LDR Rx, CERT at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, ldr_cert));
 
-    /* Not sure how to do BL without using some offset (0x50) :/ */
+    /* Look for MOVS R1, #0x14 (hacky) as it seems to be used throughout multiple devices */
 
-    void* rsa_bl = bl_search_down(rsa_cert_ldr + 0x50, 0x100);
-    if(!rsa_bl) {
-        printf("%s: Could not find RSA BL!\n", __FUNCTION__);
+    void* movs_insn = pattern_search(ldr_cert + 0x40, 0x100, bswap16(MOVS_R1_0x14), bswap16(MOVS_R1_0x14), 1);
+    if (!movs_insn) {
+        printf("%s: Failed to find MOVS R1, #0x14!\n", __FUNCTION__);
         return 0;
     }
 
-    printf("%s: Found RSA BL at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, rsa_bl));
+    printf("%s: Found MOVS R1, #0x14 at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, movs_insn));
 
-    void* rsa_bl_func = resolve_bl32(rsa_bl);
-    if(!rsa_bl_func) {
-        printf("%s: Failed to xref RSA BL!\n", __FUNCTION__);
+    void* bl_insn_1 = bl_search_down(movs_insn, 0x20);
+    if (!bl_insn_1) {
+        printf("%s: Failed to find BL 1 instruction!\n", __FUNCTION__);
         return 0;
     }
 
-    printf("%s: RSA Function address: %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, rsa_bl_func));
+    printf("%s: Found BL 1 instruction at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, bl_insn_1));
 
-    void* rsa_mov_neg1 = pattern_search(rsa_bl_func, 0x200, bswap32(MOVW_R0_NEG_1), bswap32(MOVW_R0_NEG_1), 1);
+    void* bl_insn_1_xref = resolve_bl32(bl_insn_1);
+    if (!bl_insn_1_xref) {
+        printf("%s: Failed to get BL 1 instruction xref!\n", __FUNCTION__);
+        return 0;
+    }
+
+    printf("%s: Found BL 1 instruction xref at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, bl_insn_1_xref));
+
+    void* bl_insn_2 = bl_search_down(bl_insn_1_xref, 0x20);
+    if (!bl_insn_2) {
+        printf("%s: Failed to find BL 2 instruction!\n", __FUNCTION__);
+        return 0;
+    }
+
+    printf("%s: Found BL 2 instruction at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, bl_insn_2));
+
+    void* bl_insn_2_xref = resolve_bl32(bl_insn_2);
+    if (!bl_insn_2_xref) {
+        printf("%s: Failed to get BL 2 instruction xref!\n", __FUNCTION__);
+        return 0;
+    }
+
+    printf("%s: Found BL 2 instruction xref at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, bl_insn_2_xref));
+
+    void* cmp_insn = find_next_CMP_insn_with_value(bl_insn_2_xref + 0x300 + 1, 0x200, 0x14);
+    if (!cmp_insn) {
+        printf("%s: Failed to find CMP Rx, 0x14!\n", __FUNCTION__);
+        return 0;
+    }
+
+    printf("%s: Found CMP Rx, 0x14 at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, cmp_insn));
+
+    void* bl_insn_3 = bl_search_down(cmp_insn + 0x20, 0x20);
+    if (!bl_insn_3) {
+        printf("%s: Failed to find BL 3 instruction!\n", __FUNCTION__);
+        return 0;
+    }
+
+    printf("%s: Found BL 3 instruction at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, bl_insn_3));
+
+    void* bl_insn_3_xref = resolve_bl32(bl_insn_3);
+    if (!bl_insn_3_xref) {
+        printf("%s: Failed to find BL 3 instruction xref!\n", __FUNCTION__);
+        return 0;
+    }
+
+    printf("%s: Found BL 3 instruction xref at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, bl_insn_3_xref));
+
+    void* rsa_mov_neg1 = pattern_search(bl_insn_3_xref, 0x200, bswap32(MOVW_R0_NEG_1), bswap32(MOVW_R0_NEG_1), 1);
     if(!rsa_mov_neg1) {
         printf("%s: Failed to find MOV.W R0, #0xFFFFFFFF!\n", __FUNCTION__);
 
-        void* rsa_movs_1 = pattern_search(rsa_bl_func + 0x150, 0x20, bswap32(MOV_NEGS_R0_1), bswap32(MOV_NEGS_R0_1), 1);
+        void* rsa_movs_1 = pattern_search(bl_insn_3_xref + 0x150, 0x20, bswap32(MOV_NEGS_R0_1), bswap32(MOV_NEGS_R0_1), 1);
         if(!rsa_movs_1) {
             printf("%s: Failed to find MOVS R0, #1; NEGS R0, R0!\n", __FUNCTION__);
             return 0;

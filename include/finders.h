@@ -25,6 +25,7 @@
 #define RSA_STR "Apple Secure Boot Certification Authority"
 #define MOVW_R0_NEG_1 0x4ff0ff30
 #define MOV_NEGS_R0_1 0x01204042
+#define MOVS_R1_0x14 0x1421
 
 // platform/s5l8950x/init.c
 #define PLATFORM_INIT_STR "platform/s5l"
