@@ -21,7 +21,7 @@ Compiling
 
 Sample Usage
 ---------------------------------------------------
-	iBoot32Patcher iBoot.n49.RELEASE.dfu.decrypted iBoot.n49.RELEASE.dfu.patched --debug -b "cs_enforcement_disable=1" -c "ticket" 0x80000000
+	iBoot32Patcher iBoot.n49.RELEASE.dfu.decrypted iBoot.n49.RELEASE.dfu.patched --rsa --debug -b "cs_enforcement_disable=1" -c "ticket" 0x80000000
 
 Bugs
 ---------------------------------------------------
