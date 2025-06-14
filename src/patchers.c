@@ -116,47 +116,55 @@ int patch_boot_args(struct iboot_img* iboot_in, const char* boot_args) {
 	struct arm32_thumb_LDR* ldr_rd_boot_args = (struct arm32_thumb_LDR*) _ldr_rd_boot_args;
 	printf("%s: Found LDR R%d, =boot_args at %p\n", __FUNCTION__, ldr_rd_boot_args->rd, GET_IBOOT_FILE_OFFSET(iboot_in, _ldr_rd_boot_args));
 
-	/* Find next CMP Rd, #0 instruction... */
-	void* _cmp_insn = find_next_CMP_insn_with_value(ldr_rd_boot_args, 0x100, 0);
-	if(!_cmp_insn) {
-		printf("%s: Error locating next CMP instruction!\n", __FUNCTION__);
-		return 0;
-	}
+	void* arm32_thumb_IT_insn = ldr_rd_boot_args;
+    bool it_found = false;
+    uint16_t* itPtrStart = (uint16_t*)arm32_thumb_IT_insn;
+    uint16_t* itPtrEnd = itPtrStart + 8;
 
-	struct arm32_thumb* cmp_insn = (struct arm32_thumb*) _cmp_insn;
-	void* arm32_thumb_IT_insn = _cmp_insn + 2;
+    /* Find IT instruction, if it's even there */
 
-	printf("%s: Found CMP R%d, #%d at %p\n", __FUNCTION__, cmp_insn->rd, cmp_insn->offset, GET_IBOOT_FILE_OFFSET(iboot_in, _cmp_insn));
+    for (uint16_t* itPtr = itPtrStart; itPtr != itPtrEnd; itPtr++) {
+        if (*itPtr == ARM32_THUMB_IT_EQ || *itPtr == ARM32_THUMB_IT_NE || *itPtr == ARM32_THUMB_ITE_NE) {
+            it_found = true;
+            arm32_thumb_IT_insn = (void*)itPtr;
+            break;
+        }
+    }
 
-	/* Find the next IT EQ/IT NE/ITE NE instruction following the CMP Rd, #0 instruction... (kinda hacky) */
-	if (
-        *(uint16_t*)arm32_thumb_IT_insn == ARM32_THUMB_IT_EQ ||
-        *(uint16_t*)arm32_thumb_IT_insn == ARM32_THUMB_IT_NE ||
-        *(uint16_t*)arm32_thumb_IT_insn == ARM32_THUMB_ITE_NE
-    ) {
-		printf("%s: Found IT EQ/IT NE/ITE NE at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, arm32_thumb_IT_insn));
-	} else {
-        printf("%s: Did not find IT instruction, continuing anyway!\n", __FUNCTION__);
+    if (it_found) {
+        printf("%s: Found IT instruction at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, arm32_thumb_IT_insn));
+    }
 
-        /* NOTE: For iPod2,1 or any other image that does not have IT instruction, look for CMP above boot-args */
+    void* _cmp_insn = NULL;
 
-        void* other_cmp = find_next_CMP_insn_with_value(ldr_rd_boot_args - 0x10, 0x20, 0);
+    int os_vers = get_os_version(iboot_in);
+    if (os_vers <= 4) {
+        if (it_found) {
+            /* IT instruction found! CMP is right above the IT instruction */
+            _cmp_insn = find_next_CMP_insn_with_value(arm32_thumb_IT_insn - 2, 0x10, 0);
+        } else {
+            /* Images like iPod2,1 don't have IT instruction. It has the CMP above boot-args LDR */
+            _cmp_insn = find_next_CMP_insn_with_value(ldr_rd_boot_args - 0x10, 0x20, 0);
+        }
 
-        if (!other_cmp) {
-            printf("%s: Could not find CMP Rx, #0!\n", __FUNCTION__);
+        if (!_cmp_insn) {
+            printf("%s: Failed to find CMP Rx, #0!\n", __FUNCTION__);
             return 0;
         }
 
-        printf("%s: Found CMP Rx, #0 at %p!\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, other_cmp));
+        printf("%s: Found CMP Rx, #0 at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, _cmp_insn));
+        struct arm32_thumb* cmp_insn = (struct arm32_thumb*)_cmp_insn;
 
-        int os_vers = get_os_version(iboot_in);
-        
-        if (os_vers <= 4) {
-            struct arm32_thumb* _other_insn = (struct arm32_thumb*)other_cmp;
-            _other_insn->offset = 1;
+        cmp_insn->offset = 1;
+        return 1;
+    } else {
+        _cmp_insn = find_next_CMP_insn_with_value(ldr_rd_boot_args, 0x100, 0);
+        if (!_cmp_insn) {
+            printf("%s: Failed to find CMP Rx, #0!\n", __FUNCTION__);
+            return 0;
         }
 
-        return 1;
+        printf("%s: Found CMP Rx, #0 at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, _cmp_insn));
     }
 
 	/* MOV Rd, Rs instruction usually follows right after the IT instruction. */
@@ -168,11 +176,6 @@ int patch_boot_args(struct iboot_img* iboot_in, const char* boot_args) {
 	int null_str_reg = (ldr_rd_boot_args->rd == mov_insn->rs) ? mov_insn->rd : mov_insn->rs;
 
     /* + 0x10: Some iBoots have the null string load after the CMP instruction... */
-    int os_vers = get_os_version(iboot_in);
-    if(os_vers <= 4) {
-        cmp_insn->offset = 1;
-        return 1;
-    }
 
 	void* ldr_null_str = find_last_LDR_rd((uintptr_t) (_cmp_insn + 0x10), 0x200, null_str_reg);
 	if(!ldr_null_str) {
