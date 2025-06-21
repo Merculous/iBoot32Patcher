@@ -26,20 +26,19 @@
 #define MOVW_R0_NEG_1 0x4ff0ff30
 #define MOV_NEGS_R0_1 0x01204042
 #define MOVS_R1_0x14 0x1421
+#define BX_LR 0x7047
 
-// platform/s5l8950x/init.c
-#define PLATFORM_INIT_STR "platform/s5l"
-#define PLATFORM_8720 bswap32(0x38373230)
-#define PLATFORM_8900 bswap32(0x38393030)
-#define PLATFORM_8920 bswap32(0x38393230)
-#define PLATFORM_8922 bswap32(0x38393232)
-#define PLATFORM_8930 bswap32(0x38393330)
-#define PLATFORM_8940 bswap32(0x38393430)
-#define PLATFORM_8942 bswap32(0x38393432)
-#define PLATFORM_8945 bswap32(0x38393435)
-#define PLATFORM_8947 bswap32(0x38393437)
-#define PLATFORM_8950 bswap32(0x38393530)
-#define PLATFORM_8955 bswap32(0x38393535)
+#define PLATFORM_8720 0x8720
+#define PLATFORM_8900 0x8900
+#define PLATFORM_8920 0x8920
+#define PLATFORM_8922 0x8922
+#define PLATFORM_8930 0x8930
+#define PLATFORM_8940 0x8940
+#define PLATFORM_8942 0x8942
+#define PLATFORM_8945 0x8945
+#define PLATFORM_8947 0x8947
+#define PLATFORM_8950 0x8950
+#define PLATFORM_8955 0x8955
 
 void* find_bl_verify_shsh(struct iboot_img* iboot_in);
 void* find_rsa_check_3_4(struct iboot_img* iboot_in);

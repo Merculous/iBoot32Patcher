@@ -650,12 +650,66 @@ void* find_auto_boot(struct iboot_img* iboot_in) {
 void* find_platform(struct iboot_img* iboot_in) {
     printf("%s: Entering...\n", __FUNCTION__);
 
-    void* platformStr = memstr(iboot_in->buf, iboot_in->len, PLATFORM_INIT_STR);
-    if (!platformStr) {
-        printf("%s: Failed to find platform string!\n", __FUNCTION__);
+    /*
+    This is a hacky way of getting the platform. There's another way that's better
+    which is to find LDR Rx, ='CHIP', get the xref of the BL that follows, jumping
+    to the branch, which then leads us to the MOVW R0, #0xXXXX BX LR. As of now
+    when I made this function rewrite, I don't know how to resolve(32) a NON-BL
+    instruction. So this is more of a bruteforce approach.
+    */
+
+    uint16_t platforms[] = {
+        PLATFORM_8720,
+        PLATFORM_8900,
+        PLATFORM_8920,
+        PLATFORM_8922,
+        PLATFORM_8930,
+        PLATFORM_8940,
+        PLATFORM_8942,
+        PLATFORM_8945,
+        PLATFORM_8947,
+        PLATFORM_8950,
+        PLATFORM_8955
+    };
+
+    void* match = NULL;
+
+    for (int i = 0; i < sizeof(platforms) / sizeof(platforms[0]); i++) {
+        uint16_t platform = platforms[i];
+
+        void* buffer = iboot_in->buf;
+        void* bufferEnd = iboot_in->buf + iboot_in->len;
+
+        while (buffer < bufferEnd) {
+            void* movw = find_next_MOVW_insn_with_value(buffer, iboot_in->len, platform);
+
+            if (!movw) {
+                break;
+            }
+
+            uint16_t returnInsn = bswap16(*(uint16_t*)(movw + 4));
+
+            if (returnInsn != BX_LR) {
+                buffer = movw + 4;
+                continue;
+            }
+
+            match = movw;
+            break;
+        }
+
+        if (match) {
+            break;
+        }
+    }
+
+    if (!match) {
+        printf("%s: Failed to find platform!\n", __FUNCTION__);
         return 0;
     }
 
-    printf("%s: Found platform string at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, platformStr));
-    return platformStr;
+    uint16_t platform = get_MOVW_val((struct arm32_thumb_MOVW*)match);
+    printf("%s: Found MOVW Rx, #0x%x at %p\n", __FUNCTION__, platform, GET_IBOOT_FILE_OFFSET(iboot_in, match));
+
+    return match;
 }

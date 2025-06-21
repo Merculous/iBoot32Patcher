@@ -116,7 +116,7 @@ int patch_boot_args(struct iboot_img* iboot_in, const char* boot_args) {
 	struct arm32_thumb_LDR* ldr_rd_boot_args = (struct arm32_thumb_LDR*) _ldr_rd_boot_args;
 	printf("%s: Found LDR R%d, =boot_args at %p\n", __FUNCTION__, ldr_rd_boot_args->rd, GET_IBOOT_FILE_OFFSET(iboot_in, _ldr_rd_boot_args));
 
-	void* arm32_thumb_IT_insn = ldr_rd_boot_args;
+	void* arm32_thumb_IT_insn = (void*)ldr_rd_boot_args;
     bool it_found = false;
     uint16_t* itPtrStart = (uint16_t*)arm32_thumb_IT_insn;
     uint16_t* itPtrEnd = itPtrStart + 0x30;
@@ -916,13 +916,13 @@ int patch_dualboot_ibss(struct iboot_img* iboot_in) {
 
     printf("%s: Found kloader MOV at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, kloader_addr));
 
-    void* platform_str = find_platform(iboot_in);
-    if (!platform_str) {
-        printf("%s: Failed to get platform!\n", __FUNCTION__);
+    void* platformMOVW = find_platform(iboot_in);
+    if (!platformMOVW) {
+        printf("%s: Failed to get platform MOVW!\n", __FUNCTION__);
         return 0;
     }
 
-    uint32_t platform = *(uint32_t*)(platform_str + strlen(PLATFORM_INIT_STR));
+    uint16_t platform = get_MOVW_val((struct arm32_thumb_MOVW*)platformMOVW);
 
     if (platform == PLATFORM_8920 || platform == PLATFORM_8922) {
         printf("%s: Using 920 patch!\n", __FUNCTION__);
