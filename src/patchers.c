@@ -119,7 +119,7 @@ int patch_boot_args(struct iboot_img* iboot_in, const char* boot_args) {
 	void* arm32_thumb_IT_insn = ldr_rd_boot_args;
     bool it_found = false;
     uint16_t* itPtrStart = (uint16_t*)arm32_thumb_IT_insn;
-    uint16_t* itPtrEnd = itPtrStart + 8;
+    uint16_t* itPtrEnd = itPtrStart + 0x30;
 
     /* Find IT instruction, if it's even there */
 
@@ -137,14 +137,20 @@ int patch_boot_args(struct iboot_img* iboot_in, const char* boot_args) {
 
     void* _cmp_insn = NULL;
 
+    /* FIXME iOS 10 some reason is represented as iOS 0 instead of 10 */
     int os_vers = get_os_version(iboot_in);
-    if (os_vers <= 4) {
+    if (os_vers >= 2 && os_vers <= 4) {
         if (it_found) {
             /* IT instruction found! CMP is right above the IT instruction */
             _cmp_insn = find_next_CMP_insn_with_value(arm32_thumb_IT_insn - 2, 0x10, 0);
         } else {
-            /* Images like iPod2,1 don't have IT instruction. It has the CMP above boot-args LDR */
-            _cmp_insn = find_next_CMP_insn_with_value(ldr_rd_boot_args - 0x10, 0x20, 0);
+            if (os_vers == 2) {
+                /* iOS 2 has the CMP farther away */
+                _cmp_insn = find_next_CMP_insn_with_value(ldr_rd_boot_args - 0x40, 0x10, 0);
+            } else {
+                /* Images like iPod2,1 don't have IT instruction. It has the CMP above boot-args LDR */
+                _cmp_insn = find_next_CMP_insn_with_value(ldr_rd_boot_args - 0x10, 0x20, 0);
+            }
         }
 
         if (!_cmp_insn) {
@@ -180,12 +186,12 @@ int patch_boot_args(struct iboot_img* iboot_in, const char* boot_args) {
 	void* ldr_null_str = find_last_LDR_rd((uintptr_t) (_cmp_insn + 0x10), 0x200, null_str_reg);
 	if(!ldr_null_str) {
         
-        /* + 0x9 Some iBoots have the null string load after the CMP instruction... */
+        /* + 0x9 Some iBoots have the null string load after the CMP instruction... */        
         
         ldr_null_str = find_last_LDR_rd((uintptr_t) (_cmp_insn + 0x9), 0x200, null_str_reg);
         if(!ldr_null_str) {
-            printf("%s: Unable to find LDR R%d, =null_str\n", __FUNCTION__, null_str_reg);
-            return 0;
+                printf("%s: Unable to find LDR R%d, =null_str\n", __FUNCTION__, null_str_reg);
+                return 0;
         }
 	}
 
