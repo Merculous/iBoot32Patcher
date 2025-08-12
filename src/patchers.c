@@ -171,6 +171,9 @@ int patch_boot_args(struct iboot_img* iboot_in, const char* boot_args) {
         }
 
         printf("%s: Found CMP Rx, #0 at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, _cmp_insn));
+
+        struct arm32_thumb* cmp_insn = (struct arm32_thumb*)_cmp_insn;
+        cmp_insn->offset = 1;
     }
 
 	/* MOV Rd, Rs instruction usually follows right after the IT instruction. */
