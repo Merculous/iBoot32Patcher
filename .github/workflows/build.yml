@@ -1,0 +1,26 @@
+name: Compile iBoot32Patcher
+on: [push]
+jobs:
+  linux-build:
+    strategy:
+      matrix:
+        arch:
+          - runner: ubuntu-22.04
+            name: x86_64
+          - runner: ubuntu-22.04-arm
+            name: aarch64
+
+    name: linux-${{ matrix.arch.name }}
+    runs-on: ${{ matrix.arch.runner }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Run make
+        run: make
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: iBoot32Patcher_linux-${{ matrix.arch.name }}
+          path: iBoot32Patcher
