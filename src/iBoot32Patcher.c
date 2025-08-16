@@ -63,6 +63,7 @@ int main(int argc, char** argv) {
     bool local_patch = false;
     bool kaslr_patch = false;
     bool i433_patch = false;
+    bool logo_patch = false;
     bool logo4_patch = false;
     char* custom_color = NULL;
     bool dualboot_patch = false;
@@ -86,7 +87,8 @@ int main(int argc, char** argv) {
         printf("\t--setenv\t\tApply setenv patch\n");
         printf("\t--disable-kaslr\t\tDisable KASLR\n");
         printf("\t--bgcolor RRGGBB\tApply custom background color\n");
-        printf("\t--logo4\t\t\tFix AppleLogo for iOS 4 iBoot\n");
+        printf("\t--logo\t\t\tFix AppleLogo for iOS 5+ iBoot (for De Rebus Antiquis)\n");
+        printf("\t--logo4\t\t\tFix AppleLogo for iOS 4 iBoot (for De Rebus Antiquis)\n");
         printf("\t--433\t\t\tApply enable jump to iBoot patch for iOS 4.3.3 or lower\n");
         printf("\t--dualboot\t\tApply default dualbooting patches for iOS 5 -> iOS 10\n");
         printf("\t--rsa\t\t\tApply signature check patches\n");
@@ -149,7 +151,11 @@ int main(int argc, char** argv) {
         if(HAS_ARG("--disable-kaslr", 0)) {
             kaslr_patch = true;
         }
-        
+
+        if(HAS_ARG("--logo", 0)) {
+            logo_patch = true;
+        }
+
         if(HAS_ARG("--logo4", 0)) {
             logo4_patch = true;
         }
@@ -171,7 +177,7 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    if (!rsa_patch && !debug_patch && !boot_partition_patch && !boot_ramdisk_patch && !setenv_patch && !ticket_patch && !custom_boot_args && !cmd_handler_str && !remote_patch && !local_patch && !env_boot_args && !kaslr_patch && !i433_patch && !logo4_patch && !dualboot_patch) {
+    if (!rsa_patch && !debug_patch && !boot_partition_patch && !boot_ramdisk_patch && !setenv_patch && !ticket_patch && !custom_boot_args && !cmd_handler_str && !remote_patch && !local_patch && !env_boot_args && !kaslr_patch && !i433_patch && !logo_patch && !logo4_patch && !dualboot_patch) {
         printf("%s: Nothing to patch!\n", __FUNCTION__);
         return -1;
     }
@@ -292,12 +298,21 @@ int main(int argc, char** argv) {
                 return -1;
             }
         }
-	}
+    }
+
+    if (logo_patch) {
+        ret = patch_logo(&iboot_in);
+        if(!ret) {
+            printf("%s: Error doing patch_logo()!\n", __FUNCTION__);
+            free(iboot_in.buf);
+            return -1;
+        }
+    }
 
     if (logo4_patch) {
         ret = patch_logo4(&iboot_in);
         if(!ret) {
-            printf("%s: Error doing patch_435()!\n", __FUNCTION__);
+            printf("%s: Error doing patch_logo4()!\n", __FUNCTION__);
             free(iboot_in.buf);
             return -1;
         }
