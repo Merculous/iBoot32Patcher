@@ -152,7 +152,7 @@ void* find_rsa_check_3_4(struct iboot_img* iboot_in) {
 
     /* Look for MOVS R1, #0x14 (hacky) as it seems to be used throughout multiple devices */
 
-    void* movs_insn = pattern_search(ldr_cert + 0x40, 0x100, bswap16(MOVS_R1_0x14), bswap16(MOVS_R1_0x14), 1);
+    void* movs_insn = pattern_search(ldr_cert + 0x30, 0x100, bswap16(MOVS_R1_0x14), bswap16(MOVS_R1_0x14), 2);
     if (!movs_insn) {
         printf("%s: Failed to find MOVS R1, #0x14!\n", __FUNCTION__);
         return 0;
